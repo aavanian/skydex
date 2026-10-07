@@ -1,6 +1,6 @@
 import type { Activity } from "./activities";
 import { runPool } from "./pool";
-import { APPVIEW, resolveAccount } from "./repo";
+import { APPVIEW, lastHandle, resolveAccount } from "./repo";
 import { fetchProfiles } from "./shared";
 import { DAY_MS, RECENT_DAYS, summarize, type Summary } from "./stats";
 import { activityType } from "./taxonomy";
@@ -11,6 +11,8 @@ export interface Follow {
   displayName?: string;
   /** The follow record itself, when read from the follower's repo. */
   followUri?: string;
+  /** For an unavailable account: the handle its DID document last declared. */
+  lastHandle?: string;
   /** Why the account can no longer be seen, if it cannot. */
   unavailable?: "deactivated" | "suspended" | "deleted";
   /**
@@ -290,6 +292,8 @@ export async function fetchFollowing(
   await runPool(follows, 6, async (follow) => {
     if (!profiles.has(follow.did)) {
       follow.unavailable = await unavailableReason(follow.did, fetchFn);
+      const handle = await lastHandle(follow.did, fetchFn);
+      if (handle) follow.lastHandle = handle;
     } else if (!listed.has(follow.did)) {
       follow.block = blocked.has(follow.did)
         ? "you-block"

@@ -54,13 +54,34 @@ export async function resolveAccount(
   const doc = await getJson<DidDocument>(fetchFn, didDocumentUrl(did));
   const pds = doc.service?.find((s) => s.id.endsWith("#atproto_pds"));
   if (!pds) throw new Error(`No data server listed for ${did}`);
-  const aka = doc.alsoKnownAs?.find((a) => a.startsWith("at://"));
 
   return {
     did,
-    handle: aka ? aka.slice("at://".length) : did,
+    handle: handleIn(doc) ?? did,
     pds: pds.serviceEndpoint.replace(/\/$/, ""),
   };
+}
+
+function handleIn(doc: DidDocument): string | undefined {
+  return doc.alsoKnownAs
+    ?.find((a) => a.startsWith("at://"))
+    ?.slice("at://".length);
+}
+
+/**
+ * The handle a DID document last declared. It stays readable after an
+ * account is deactivated or deleted, but the handle may since have been
+ * taken by another account.
+ */
+export async function lastHandle(
+  did: string,
+  fetchFn: typeof fetch = fetch,
+): Promise<string | undefined> {
+  try {
+    return handleIn(await getJson<DidDocument>(fetchFn, didDocumentUrl(did)));
+  } catch {
+    return undefined;
+  }
 }
 
 /** Downloads the account's full repository as a CAR file. */

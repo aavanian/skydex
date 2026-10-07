@@ -64,7 +64,7 @@ function sortValue(row: Row, key: SortKey): number | string {
   const s = row.summary;
   switch (key) {
     case "account":
-      return row.follow.handle;
+      return row.follow.lastHandle ?? row.follow.handle;
     case "last":
       return s?.last?.getTime() ?? 0;
     case "lastOwn":
@@ -102,6 +102,7 @@ function externalIcon(): SVGSVGElement {
 }
 
 function displayName(follow: Follow): string {
+  if (follow.lastHandle) return `@${follow.lastHandle}`;
   return follow.handle === follow.did ? follow.did : `@${follow.handle}`;
 }
 
@@ -122,7 +123,7 @@ function fillRow(row: Row): void {
       {
         href: `?actor=${encodeURIComponent(follow.did)}`,
         target: "_blank",
-        title: "Analyze this account",
+        title: follow.lastHandle ? follow.did : "Analyze this account",
       },
       ...breakableName(follow),
     ),
@@ -139,9 +140,11 @@ function fillRow(row: Row): void {
       },
       externalIcon(),
     ),
-    follow.displayName
-      ? h("div", { className: "footnote" }, follow.displayName)
-      : undefined,
+    follow.lastHandle
+      ? h("div", { className: "footnote" }, "last known handle")
+      : follow.displayName
+        ? h("div", { className: "footnote" }, follow.displayName)
+        : undefined,
   );
   if (row.failed) {
     row.element.replaceChildren(

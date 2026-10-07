@@ -43,7 +43,11 @@ const fetchFn: typeof fetch = async (input) => {
   const json = (body: unknown, status = 200) => Response.json(body, { status });
 
   if (url.hostname === "plc.directory") {
-    return json(didDoc(url.pathname.slice(1) === me ? pds : theirPds));
+    const did = url.pathname.slice(1);
+    const doc = didDoc(did === me ? pds : theirPds);
+    return json(
+      did === deactivated ? { ...doc, alsoKnownAs: ["at://gone.test"] } : doc,
+    );
   }
   switch (url.pathname) {
     case "/xrpc/com.atproto.repo.listRecords": {
@@ -92,6 +96,7 @@ test("lists every followed account from the follow records, with why some are un
     {
       did: deactivated,
       handle: deactivated,
+      lastHandle: "gone.test",
       followUri: followUri(deactivated),
       unavailable: "deactivated",
     },
