@@ -47,9 +47,12 @@ classified as exactly one of:
   organic like a top-level post.
 - **organic**: any other post.
 
-Organic and quote posts are further tagged by the content classifier:
-`promotional`, `snark`, `partisan-politics`, `other` (not mutually
-exclusive except `other`).
+Organic and quote posts are further tagged by the content classifier,
+tags not mutually exclusive: `promotional`, `snark`, `politics` (any
+political topic), and `political_snark`, computed as politics and
+snark both holding. Partisanship as such proved too subjective to ask
+directly: political posts that analyse are fine, political posts
+that dunk are what "partisan" was meant to catch.
 
 ## Views
 
@@ -82,8 +85,7 @@ Pluggable `Classifier` interface: `classify(posts) -> tags per post`.
     "out now", "subscribe", "pre-order", ...), shop / newsletter /
     crowdfunding domains.
   - Snark: very weak heuristics only; reported as low-confidence.
-  - Partisan politics: none. Too hard for keywords; it waits until the
-    model-backed classifier can be tested on real accounts.
+  - Politics: none. Too hard for keywords; model-backed only.
 - **Model-backed (optional, bring your own key)**
   - Key obtained by OpenRouter's browser login (OAuth PKCE) or pasted.
     Kept in session storage by default, local storage only when the

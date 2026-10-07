@@ -4,7 +4,8 @@ import type { Questions } from "./decisions";
 export const TAG_LABELS: Record<string, string> = {
   promotional: "Promotional",
   snark: "Snark",
-  partisan: "Partisan politics",
+  politics: "Political",
+  political_snark: "Political snark",
 };
 
 /**
@@ -32,14 +33,14 @@ export const CONTENT_QUESTIONS: Questions = {
         "The author is sincere, neutral, warm, or makes good-natured jokes that do not mock anyone.",
     },
   },
-  partisan: {
+  politics: {
     type: "noul",
     instructions:
-      "Is `post` about partisan politics? If `quoted_post` is present, consider it as context.",
+      "Is `post` about politics? If `quoted_post` is present, consider it as context.",
     criteria: {
-      true: "It is about political parties, elected officials, candidates, elections, or takes a side in a fight between political camps.",
+      true: "It is about government, elections, political parties, politicians, public policy, legislation, or relations between states, in any country.",
       false:
-        "It is about other topics, including technology, science, culture or society, without taking a partisan side.",
+        "It is about other topics, such as technology, science, culture, work or daily life, without discussing politics.",
     },
   },
 };

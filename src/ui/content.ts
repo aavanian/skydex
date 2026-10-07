@@ -1,6 +1,7 @@
 import type { Activity } from "../activities";
 import { AnswerCache } from "../classify/cache";
 import { contentItems, tagSummary } from "../classify/content";
+import { withDerivedTags } from "../classify/derived";
 import { decide, DEFAULT_DECISION_MODEL } from "../classify/decisions";
 import {
   CONTENT_QUESTIONS,
@@ -42,8 +43,8 @@ function results(
   answers: Map<string, Record<string, number>>,
   texts: Map<string, string>,
 ): HTMLElement {
-  const tags = Object.keys(CONTENT_QUESTIONS);
-  const summary = tagSummary(answers, tags, THRESHOLD, 5);
+  const tags = Object.keys(TAG_LABELS);
+  const summary = tagSummary(withDerivedTags(answers), tags, THRESHOLD, 5);
   return h(
     "div",
     { className: "tags" },
@@ -98,7 +99,7 @@ function results(
 
 /**
  * Card tagging the account's own posts as promotional, snarky or
- * partisan, using a decision model through the viewer's own
+ * political, using a decision model through the viewer's own
  * OpenRouter key. Nothing is sent until the viewer asks.
  */
 export function contentCard(
