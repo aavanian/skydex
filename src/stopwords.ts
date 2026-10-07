@@ -28,7 +28,32 @@ ses seulement si sien soi soit sommes son sont sous suis sur ta te tes
 toi ton tous tout toute toutes très tu un une vos votre vous vu ça déjà
 c'est j'ai il y a ya bien rien fois`;
 
-/** English and French words too common to say anything about a topic. */
+const GENERIC_ENGLISH = `able actually already always another anyone anything
+around ask asked away back bad best better big bit call came come comes
+coming day days different done else end enough everybody everyone
+everything feel find first found give go goes good great guess happen
+hard help hey hope idea keep kind know knew last least left less life
+little long look looking looks love lot lots maybe mean means need needs
+never new next nice nothing old part people person place point pretty
+probably put quite read real right says seem seems seen something
+someone sometimes sort start sure take talk tell thanks thank time times
+today tomorrow tonight top try trying turn used using use week weeks
+whole work working works year years yesterday yet folks totally literally
+anyway oh ok okay omg wow`;
+
+const GENERIC_FRENCH = `aller alors autres avoir beaucoup bonne bon bonnes bons chose choses
+dire dit enfin faut gens grand grande jamais jour jours merci mieux moment
+monde non oui personne petit petite peu peut-être plein plutôt point
+premier première sait savent savoir semble souvent temps toujours trop
+truc trucs vraiment voir veut vois voilà année années aujourd'hui demain
+hier`;
+
+/**
+ * English and French words too common to say anything about a topic:
+ * grammatical words plus generic conversational vocabulary.
+ */
 export const STOPWORDS: ReadonlySet<string> = new Set(
-  `${ENGLISH} ${FRENCH}`.split(/\s+/).filter(Boolean),
+  `${ENGLISH} ${FRENCH} ${GENERIC_ENGLISH} ${GENERIC_FRENCH}`
+    .split(/\s+/)
+    .filter(Boolean),
 );

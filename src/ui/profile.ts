@@ -4,6 +4,7 @@ import type { Account } from "../repo";
 import { monthlyMix, RECENT_DAYS, summarize, type Summary } from "../stats";
 import { ACTIVITY_TYPES, type ActivityType } from "../taxonomy";
 import { cssVar, h } from "./dom";
+import { termsCard } from "./terms";
 
 const TYPE_LABELS: Record<ActivityType, string> = {
   organic: "Organic",
@@ -291,7 +292,11 @@ export function renderProfile(
   root.replaceChildren(
     summaryCard(account, summary, now),
     ...(activities.length
-      ? [mixCard(activities, now), timelineCard(activities, now)]
+      ? [
+          mixCard(activities, now),
+          timelineCard(activities, now),
+          termsCard(activities, now),
+        ]
       : []),
   );
 }

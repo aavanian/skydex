@@ -10,6 +10,19 @@ describe("termsOf", () => {
     ).toEqual(["garden", "blooming", "bees", "happy"]);
   });
 
+  test("drops generic conversational words that say nothing about a topic", () => {
+    expect(
+      termsOf({
+        text: "People know it's a good time for something new: beekeeping",
+      }).words,
+    ).toEqual(["beekeeping"]);
+    expect(
+      termsOf({
+        text: "Les gens savent que c'est une bonne chose : apiculture",
+      }).words,
+    ).toEqual(["apiculture"]);
+  });
+
   test("drops French stopwords and keeps accented words", () => {
     expect(
       termsOf({ text: "Les élections sont très importantes pour nous" }).words,
@@ -17,18 +30,18 @@ describe("termsOf", () => {
   });
 
   test("strips French elisions", () => {
-    expect(termsOf({ text: "L’élection d'aujourd'hui" }).words).toEqual([
+    expect(termsOf({ text: "L’élection d'Obama" }).words).toEqual([
       "élection",
-      "aujourd'hui",
+      "obama",
     ]);
   });
 
   test("keeps URLs, handles and hashtags out of words", () => {
     expect(
       termsOf({
-        text: "read @alice.bsky.social on https://example.com/x #Gardening now",
+        text: "beekeepers @alice.bsky.social on https://example.com/x #Gardening now",
       }).words,
-    ).toEqual(["read"]);
+    ).toEqual(["beekeepers"]);
   });
 
   test("collects hashtags from tag facets and record tags, lowercased and unique", () => {

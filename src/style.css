@@ -226,3 +226,57 @@ td:first-child {
   color: var(--text-muted);
   font-size: 12px;
 }
+h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 12px 0 4px;
+}
+h3.column-title {
+  font-size: 15px;
+  color: var(--text-primary);
+  margin: 0;
+}
+.terms-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+}
+.cloud {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+  line-height: 1.2;
+}
+.cloud li {
+  color: var(--text-primary);
+}
+.ranked-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0 16px;
+}
+ol.ranked {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 13px;
+}
+ol.ranked li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 0;
+  border-bottom: 1px solid var(--grid);
+}
+ol.ranked li span:first-child {
+  overflow-wrap: anywhere;
+}
+ol.ranked .count {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
