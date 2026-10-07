@@ -17,4 +17,4 @@
   (403 "This model is not available in your region."), although its
   only provider, TypeSafe, works directly from the same place. Likely
   an OpenRouter-side restriction. `cloudflare/clef-flash` serves the
-  same Decisions API (not yet confirmed from our region).
+  same Decisions API and works from our region (2026-10-07).
