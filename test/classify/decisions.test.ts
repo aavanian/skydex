@@ -1,0 +1,129 @@
+import { describe, expect, test } from "vitest";
+import { decide, type DecisionItem } from "../../src/classify/decisions";
+
+const questions = {
+  promotional: {
+    type: "noul" as const,
+    instructions: "Is `post` promotional?",
+  },
+  snark: { type: "noul" as const, instructions: "Is `post` snarky?" },
+};
+
+const items: DecisionItem[] = [
+  { id: "a", state: { post: "buy my book" } },
+  { id: "b", state: { post: "lol sure" } },
+];
+
+function answer(promotional: number, snark: number, cost = 0.00002) {
+  return {
+    answers: {
+      promotional: { type: "noul", noul: promotional },
+      snark: { type: "noul", noul: snark },
+    },
+    usage: { input_tokens: 500, output_tokens: 0, cost },
+  };
+}
+
+const options = { apiKey: "sk-test", retryDelayMs: 0 };
+
+describe("decide", () => {
+  test("posts each item's state and the questions, and returns probabilities", async () => {
+    const requests: { url: string; init?: RequestInit }[] = [];
+    const fetchFn: typeof fetch = async (input, init) => {
+      requests.push({ url: String(input), init });
+      const body = JSON.parse(String(init?.body));
+      return Response.json(
+        body.state.post === "buy my book"
+          ? answer(0.9, 0.1)
+          : answer(0.05, 0.8),
+      );
+    };
+
+    const result = await decide(items, questions, { ...options, fetchFn });
+
+    expect(requests[0]?.url).toBe("https://openrouter.ai/api/alpha/decisions");
+    expect(requests[0]?.init?.method).toBe("POST");
+    expect(new Headers(requests[0]?.init?.headers).get("authorization")).toBe(
+      "Bearer sk-test",
+    );
+    expect(JSON.parse(String(requests[0]?.init?.body))).toEqual({
+      model: "typesafe/jev-1.13",
+      state: { post: "buy my book" },
+      questions,
+    });
+    expect(result.answers.get("a")).toEqual({ promotional: 0.9, snark: 0.1 });
+    expect(result.answers.get("b")).toEqual({ promotional: 0.05, snark: 0.8 });
+    expect(result.cost).toBeCloseTo(0.00004);
+    expect(result.failed).toBe(0);
+  });
+
+  test("keeps at most `concurrency` requests in flight", async () => {
+    let inFlight = 0;
+    let maxInFlight = 0;
+    const fetchFn: typeof fetch = async () => {
+      inFlight++;
+      maxInFlight = Math.max(maxInFlight, inFlight);
+      await new Promise((resolve) => setTimeout(resolve, 1));
+      inFlight--;
+      return Response.json(answer(0, 0));
+    };
+    const many = Array.from({ length: 10 }, (_, i) => ({
+      id: String(i),
+      state: { post: "x" },
+    }));
+
+    await decide(many, questions, { ...options, fetchFn, concurrency: 3 });
+
+    expect(maxInFlight).toBe(3);
+  });
+
+  test("retries rate-limited requests", async () => {
+    let calls = 0;
+    const fetchFn: typeof fetch = async () =>
+      ++calls === 1
+        ? new Response("slow down", { status: 429 })
+        : Response.json(answer(0.5, 0.5));
+
+    const result = await decide(items.slice(0, 1), questions, {
+      ...options,
+      fetchFn,
+    });
+
+    expect(calls).toBe(2);
+    expect(result.answers.get("a")).toEqual({ promotional: 0.5, snark: 0.5 });
+  });
+
+  test("counts items that keep failing without failing the run", async () => {
+    const fetchFn: typeof fetch = async (_input, init) =>
+      JSON.parse(String(init?.body)).state.post === "lol sure"
+        ? new Response("bad", { status: 400 })
+        : Response.json(answer(0.9, 0.1));
+
+    const result = await decide(items, questions, { ...options, fetchFn });
+
+    expect(result.failed).toBe(1);
+    expect([...result.answers.keys()]).toEqual(["a"]);
+  });
+
+  test("stops with a clear error when the key is rejected", async () => {
+    const fetchFn: typeof fetch = async () =>
+      new Response("no", { status: 401 });
+
+    await expect(
+      decide(items, questions, { ...options, fetchFn }),
+    ).rejects.toThrow("OpenRouter rejected the API key (401)");
+  });
+
+  test("reports progress after each item", async () => {
+    const progress: number[] = [];
+    const fetchFn: typeof fetch = async () => Response.json(answer(0, 0));
+
+    await decide(items, questions, {
+      ...options,
+      fetchFn,
+      onProgress: (done) => progress.push(done),
+    });
+
+    expect(progress).toEqual([1, 2]);
+  });
+});
