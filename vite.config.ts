@@ -38,6 +38,13 @@ function contentSecurityPolicy(): Plugin {
 export default defineConfig({
   base: "./",
   plugins: [contentSecurityPolicy()],
+  server: { host: "127.0.0.1" },
+  preview: { host: "127.0.0.1" },
+  build: {
+    rollupOptions: {
+      input: { main: "index.html", callback: "callback.html" },
+    },
+  },
   test: {
     include: ["test/**/*.test.ts"],
     exclude: ["test/live/**"],

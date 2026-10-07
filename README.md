@@ -6,16 +6,22 @@ how much it posts, reposts, quotes and replies, whether it has gone
 quiet, what it talks about, and (with an OpenRouter key) how much of
 it is promotional, snarky or political.
 
-Everything runs in the browser. No server, no Bluesky login.
+Everything runs in the browser, with no server. No Bluesky login is
+needed, except to unfollow from the follows scan: that optional login
+asks only for permission to delete follow records, lives in the page's
+memory, and ends when the tab is closed or reloaded.
 
 ## Develop
 
 ```sh
 pnpm install
-pnpm dev          # http://localhost:5173/?actor=<handle>
+pnpm dev          # http://127.0.0.1:5173/?actor=<handle>
 ./check.sh        # format, lint, types, tests
 pnpm test:live    # tests against the real Bluesky network
 ```
+
+Use `127.0.0.1`, not `localhost`: Bluesky's OAuth only accepts
+loopback IP addresses for local development.
 
 See `docs/DESIGN.md` for how it works and `docs/DISCOVERIES.md` for
 API quirks.

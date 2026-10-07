@@ -7,6 +7,9 @@ import {
   type FollowStatus,
   type FollowSummary,
 } from "../follows";
+import type { OAuthSession } from "@atproto/oauth-client";
+import { logIn, logOut } from "../auth/session";
+import { deleteFollow } from "../auth/unfollow";
 import { runPool } from "../pool";
 import { RECENT_DAYS } from "../stats";
 import { h } from "./dom";
@@ -47,8 +50,12 @@ interface Row {
   summary?: FollowSummary;
   status?: DisplayStatus;
   failed?: boolean;
+  unfollowed?: boolean;
   element: HTMLTableRowElement;
 }
+
+/** Builds the trailing cell holding a row's actions. */
+type ActionCell = (row: Row) => HTMLTableCellElement;
 
 type SortKey = "account" | "last" | "lastOwn" | "rate" | "organic" | "status";
 
@@ -74,7 +81,7 @@ function dateCell(date: Date | undefined): string {
   return date ? dateFormat.format(date) : "—";
 }
 
-function fillRow(row: Row): void {
+function fillRow(row: Row, action: ActionCell): void {
   const { follow, summary, status } = row;
   const account = h(
     "td",
@@ -92,6 +99,7 @@ function fillRow(row: Row): void {
     row.element.replaceChildren(
       account,
       h("td", { colSpan: 5, className: "footnote" }, "Could not load"),
+      action(row),
     );
     return;
   }
@@ -104,6 +112,7 @@ function fillRow(row: Row): void {
         { className: "follow-status gone" },
         STATUS_LABELS[follow.unavailable],
       ),
+      action(row),
     );
     return;
   }
@@ -111,6 +120,7 @@ function fillRow(row: Row): void {
     row.element.replaceChildren(
       account,
       h("td", { colSpan: 5, className: "footnote" }, "…"),
+      action(row),
     );
     return;
   }
@@ -130,6 +140,7 @@ function fillRow(row: Row): void {
     ),
     h("td", {}, summary.total ? percent.format(summary.shares.organic) : "—"),
     h("td", { className: `follow-status ${status}` }, STATUS_LABELS[status]),
+    action(row),
   );
 }
 
@@ -149,6 +160,39 @@ export async function renderFollows(
   );
   const { subject, follows } = await fetchFollowing(actor);
   const now = new Date();
+  let session: OAuthSession | undefined;
+
+  const action: ActionCell = (row) => {
+    if (row.unfollowed) {
+      return h("td", { className: "follow-status gone" }, "Unfollowed");
+    }
+    const uri = row.follow.followUri;
+    if (!session || !uri) return h("td");
+    const button = h(
+      "button",
+      { type: "button", className: "secondary unfollow" },
+      "Unfollow",
+    );
+    button.addEventListener("click", async () => {
+      const name =
+        row.follow.handle === row.follow.did
+          ? row.follow.did
+          : `@${row.follow.handle}`;
+      if (!session || !confirm(`Unfollow ${name}?`)) return;
+      button.disabled = true;
+      try {
+        await deleteFollow(session.fetchHandler.bind(session), uri);
+        row.unfollowed = true;
+        refresh(row);
+        updateCounts();
+      } catch (error) {
+        button.disabled = false;
+        setStatus(error instanceof Error ? error.message : String(error), true);
+      }
+    });
+    return h("td", {}, button);
+  };
+  const refresh = (row: Row) => fillRow(row, action);
 
   const rows: Row[] = follows.map((follow) => {
     const row: Row = {
@@ -156,7 +200,7 @@ export async function renderFollows(
       element: h("tr"),
       status: follow.unavailable,
     };
-    fillRow(row);
+    refresh(row);
     return row;
   });
   const tbody = h("tbody", {}, ...rows.map((r) => r.element));
@@ -207,16 +251,20 @@ export async function renderFollows(
           button,
         );
       }),
+      h("th", {}, ""),
     );
   }
   sort();
 
   const counts = h("p", { className: "subtitle" });
   function updateCounts() {
+    const following = rows.filter((r) => !r.unfollowed);
     const count = (...statuses: DisplayStatus[]) =>
-      rows.filter((r) => r.status && statuses.includes(r.status)).length;
+      following.filter((r) => r.status && statuses.includes(r.status)).length;
+    const unfollowed = rows.length - following.length;
     counts.textContent = [
-      `${integer.format(follows.length)} follows`,
+      `${integer.format(following.length)} follows`,
+      ...(unfollowed ? [`${integer.format(unfollowed)} unfollowed`] : []),
       `${integer.format(count("deleted", "suspended", "deactivated"))} gone`,
       `${integer.format(count("blocks-you"))} block you`,
       `${integer.format(count("dormant", "never"))} dormant or never posted`,
@@ -225,12 +273,72 @@ export async function renderFollows(
   }
   updateCounts();
 
+  const login = h("div", { className: "login" });
+  function showLogin() {
+    if (session) {
+      const out = h(
+        "button",
+        { type: "button", className: "secondary" },
+        "Log out",
+      );
+      out.addEventListener("click", async () => {
+        const ending = session;
+        session = undefined;
+        rows.forEach(refresh);
+        showLogin();
+        if (ending) await logOut(ending).catch(() => undefined);
+      });
+      login.replaceChildren(
+        h(
+          "span",
+          { className: "footnote" },
+          `Logged in as @${subject.handle}. `,
+        ),
+        out,
+      );
+      return;
+    }
+    const button = h(
+      "button",
+      { type: "button", className: "secondary" },
+      `Log in as @${subject.handle} to unfollow`,
+    );
+    button.addEventListener("click", async () => {
+      button.disabled = true;
+      try {
+        session = await logIn(subject.did);
+        if (session.did !== subject.did) {
+          await logOut(session).catch(() => undefined);
+          session = undefined;
+          throw new Error(
+            `Log in as @${subject.handle} to unfollow from this list`,
+          );
+        }
+        rows.forEach(refresh);
+        showLogin();
+      } catch (error) {
+        button.disabled = false;
+        setStatus(error instanceof Error ? error.message : String(error), true);
+      }
+    });
+    login.replaceChildren(
+      button,
+      h(
+        "span",
+        { className: "footnote" },
+        " Asks only for permission to delete follows. The login lasts until this tab is closed or reloaded and is never saved.",
+      ),
+    );
+  }
+  showLogin();
+
   root.replaceChildren(
     h(
       "section",
       { className: "card" },
       h("h2", {}, `Who @${subject.handle} follows`),
       counts,
+      login,
       h(
         "p",
         { className: "footnote" },
@@ -257,7 +365,7 @@ export async function renderFollows(
     } catch {
       row.failed = true;
     }
-    fillRow(row);
+    refresh(row);
     setStatus(
       `Scanned ${integer.format(++done)} of ${integer.format(active.length)}…`,
     );

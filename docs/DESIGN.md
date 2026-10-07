@@ -89,6 +89,26 @@ that dunk are what "partisan" was meant to catch.
    - Accounts hiding from logged-out viewers still return their feed
      to the public AppView (checked on several dozen such accounts).
 
+### Unfollowing from the follows scan
+
+Optional atproto OAuth login, requested scope
+`atproto repo:app.bsky.graph.follow?action=delete` only.
+
+- Uses `@atproto/oauth-client` directly with in-memory state and
+  session stores: nothing is persisted, so closing or reloading the tab
+  logs out ("Log out" also revokes server-side). The browser package
+  was not used because it always persists to IndexedDB.
+- Login runs in a popup so the page, which holds the in-memory state,
+  never navigates. `callback.html` only relays the authorization
+  response to the page over a BroadcastChannel and closes.
+- Unfollow deletes the follow record (`com.atproto.repo.deleteRecord`)
+  read by the scan, after a confirmation, one account at a time. This
+  also works for accounts that block you, which the Bluesky app does
+  not list.
+- Locally the client is a loopback client (served on `127.0.0.1`).
+  Hosted, it needs `client-metadata.json` next to the page, generated
+  from `clientMetadataFor` at deployment.
+
 ## Classification
 
 Pluggable `Classifier` interface: `classify(posts) -> tags per post`.
