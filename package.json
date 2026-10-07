@@ -1,0 +1,32 @@
+{
+  "name": "bsky-user-analysis",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "test": "vitest run",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "dependencies": {
+    "@atcute/bluesky": "^4.0.22",
+    "@atcute/client": "^5.1.2",
+    "@atcute/identity-resolver": "^2.0.2",
+    "@atcute/repo": "^1.0.2",
+    "@observablehq/plot": "^0.6.17",
+    "idb": "^8.0.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.11.0",
+    "fake-indexeddb": "^6.2.5",
+    "prettier": "^3.9.9",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.70.1",
+    "vite": "^8.3.0",
+    "vitest": "^5.0.1"
+  }
+}
