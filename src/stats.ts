@@ -16,7 +16,7 @@ export interface Summary {
   recentPerWeek: number;
 }
 
-const DAY_MS = 24 * 60 * 60 * 1000;
+export const DAY_MS = 24 * 60 * 60 * 1000;
 export const RECENT_DAYS = 90;
 
 function zeroCounts(): CountsByType {

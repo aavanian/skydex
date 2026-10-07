@@ -68,12 +68,18 @@ that dunk are what "partisan" was meant to catch.
    - Top words, hashtags (from `#tag` facets and `tags`), mentions
      (from mention facets, resolved to handles) and link domains, each
      split own vs. shared.
-2. **Follows scan** (for an account, typically yourself)
-   - Table of follows: last post date, last organic post date,
-     posts in last 90 days, organic share. Sortable. Each row links
-     into view 1.
-   - Uses lightweight per-account fetches (recent `listRecords`),
-     not full repos, to stay within rate limits.
+2. **Follows scan** (`?follows=<actor>`, the actor remembered locally)
+   - Table of follows: last activity, last own post (organic or
+     quote), activities per week over 90 days, organic share, and a
+     status: never posted, dormant (nothing in 90 days), no own posts
+     lately (only reposts or replies), active. Sortable; each row
+     opens view 1.
+   - One AppView `getAuthorFeed` request per follow (latest 100
+     items, replies included), six at a time. No PDS resolution
+     needed. Reposts are dated by AppView index time. When all 100
+     items are recent, the rate is shown as a minimum.
+   - Accounts hiding from logged-out viewers still return their feed
+     to the public AppView (checked on several dozen such accounts).
 
 ## Classification
 

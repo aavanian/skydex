@@ -322,3 +322,45 @@ ul.examples a {
   font-weight: 500;
   vertical-align: 1px;
 }
+nav.modes {
+  display: flex;
+  gap: 16px;
+  margin: -8px 0 16px;
+  font-size: 14px;
+}
+nav.modes a {
+  color: var(--text-secondary);
+}
+nav.modes a[aria-current="page"] {
+  color: var(--text-primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+.table-scroll.follows {
+  max-height: none;
+}
+.follows td,
+.follows th {
+  white-space: nowrap;
+}
+.follows td:first-child {
+  white-space: normal;
+}
+.follows td a {
+  color: var(--text-primary);
+}
+button.sort {
+  padding: 0;
+  color: var(--text-secondary);
+  background: none;
+  font-weight: 600;
+  font-size: 13px;
+}
+.follow-status.dormant,
+.follow-status.never {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.follow-status.active {
+  color: var(--text-muted);
+}

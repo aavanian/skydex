@@ -4,10 +4,33 @@ import { actorFromInput } from "./actor-input";
 import { downloadRepo, resolveAccount } from "./repo";
 import { h } from "./ui/dom";
 import { finishLogin } from "./ui/key";
+import { renderFollows } from "./ui/follows";
 import { renderProfile } from "./ui/profile";
 
 const app = document.querySelector<HTMLElement>("#app");
 if (!app) throw new Error("Missing #app element");
+
+/** Profile of one account, or a scan of everyone an account follows. */
+type Mode = "actor" | "follows";
+const params = new URLSearchParams(location.search);
+const mode: Mode = params.has("follows") ? "follows" : "actor";
+const FOLLOWS_ACTOR = "follows-actor";
+
+function remembered(): string {
+  try {
+    return localStorage.getItem(FOLLOWS_ACTOR) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function remember(actor: string): void {
+  try {
+    localStorage.setItem(FOLLOWS_ACTOR, actor);
+  } catch {
+    // Not remembered: the field simply starts empty next time.
+  }
+}
 
 const input = h("input", {
   type: "text",
@@ -20,13 +43,34 @@ const form = h(
   "form",
   { className: "lookup" },
   input,
-  h("button", { type: "submit" }, "Analyze"),
+  h("button", { type: "submit" }, mode === "follows" ? "Scan" : "Analyze"),
+);
+const nav = h(
+  "nav",
+  { className: "modes" },
+  h(
+    "a",
+    {
+      href: "?",
+      attrs: mode === "actor" ? { "aria-current": "page" } : {},
+    },
+    "Account profile",
+  ),
+  h(
+    "a",
+    {
+      href: `?follows=${encodeURIComponent(remembered())}`,
+      attrs: mode === "follows" ? { "aria-current": "page" } : {},
+    },
+    "Follows scan",
+  ),
 );
 const status = h("p", { className: "status" });
 const results = h("div");
 
 app.replaceChildren(
   h("h1", {}, "Bluesky account profile"),
+  nav,
   form,
   status,
   results,
@@ -61,9 +105,16 @@ function analyzeFromInput(text: string) {
   }
   input.value = actor;
   const url = new URL(location.href);
-  url.searchParams.set("actor", actor);
+  url.searchParams.set(mode, actor);
   history.replaceState(null, "", url);
-  void analyze(actor);
+  if (mode === "follows") {
+    remember(actor);
+    renderFollows(results, actor, setStatus).catch((error: unknown) =>
+      setStatus(error instanceof Error ? error.message : String(error), true),
+    );
+  } else {
+    void analyze(actor);
+  }
 }
 
 form.addEventListener("submit", (event) => {
@@ -71,7 +122,8 @@ form.addEventListener("submit", (event) => {
   analyzeFromInput(input.value);
 });
 
-const initial = new URLSearchParams(location.search).get("actor");
+const initial = params.get(mode) || (mode === "follows" ? remembered() : "");
+if (mode === "follows") input.placeholder = "Your handle, DID or profile URL";
 finishLogin().then(
   () => {
     if (initial) analyzeFromInput(initial);

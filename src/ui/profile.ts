@@ -1,7 +1,13 @@
 import * as Plot from "@observablehq/plot";
 import type { Activity } from "../activities";
 import type { Account } from "../repo";
-import { monthlyMix, RECENT_DAYS, summarize, type Summary } from "../stats";
+import {
+  DAY_MS,
+  monthlyMix,
+  RECENT_DAYS,
+  summarize,
+  type Summary,
+} from "../stats";
 import { ACTIVITY_TYPES, type ActivityType } from "../taxonomy";
 import { cssVar, h } from "./dom";
 import { termsCard } from "./terms";
@@ -74,7 +80,7 @@ function summaryCard(
   now: Date,
 ): HTMLElement {
   const daysSinceOrganic = summary.lastOrganic
-    ? Math.floor((now.getTime() - summary.lastOrganic.getTime()) / 86_400_000)
+    ? Math.floor((now.getTime() - summary.lastOrganic.getTime()) / DAY_MS)
     : undefined;
   return h(
     "section",

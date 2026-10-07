@@ -1,6 +1,6 @@
 import type { Activity } from "./activities";
 import { APPVIEW } from "./repo";
-import { RECENT_DAYS, summarize, type Summary } from "./stats";
+import { DAY_MS, RECENT_DAYS, summarize, type Summary } from "./stats";
 import { activityType } from "./taxonomy";
 
 export interface Follow {
@@ -66,15 +66,24 @@ export function activitiesFromFeed(did: string, feed: FeedItem[]): Activity[] {
   );
 }
 
-/** Everyone an account follows. */
+function toFollow({ did, handle, displayName }: Follow): Follow {
+  return displayName ? { did, handle, displayName } : { did, handle };
+}
+
+/** An account (`subject`) and everyone it follows. */
 export async function fetchFollows(
   actor: string,
   fetchFn: typeof fetch = fetch,
-): Promise<Follow[]> {
+): Promise<{ subject: Follow; follows: Follow[] }> {
   const follows: Follow[] = [];
+  let subject: Follow | undefined;
   let cursor: string | undefined;
   do {
-    const page = await getJson<{ follows: Follow[]; cursor?: string }>(
+    const page = await getJson<{
+      subject: Follow;
+      follows: Follow[];
+      cursor?: string;
+    }>(
       fetchFn,
       xrpc("app.bsky.graph.getFollows", {
         actor,
@@ -82,14 +91,11 @@ export async function fetchFollows(
         ...(cursor ? { cursor } : {}),
       }),
     );
-    for (const { did, handle, displayName } of page.follows) {
-      follows.push(
-        displayName ? { did, handle, displayName } : { did, handle },
-      );
-    }
+    subject ??= toFollow(page.subject);
+    follows.push(...page.follows.map(toFollow));
     cursor = page.cursor;
   } while (cursor);
-  return follows;
+  return { subject: subject ?? { did: actor, handle: actor }, follows };
 }
 
 export interface RecentActivity {
@@ -118,6 +124,9 @@ export async function fetchRecentActivity(
 }
 
 export interface FollowSummary extends Summary {
+  /** Latest organic or quote post: something the account wrote itself. */
+  lastOwnPost?: Date;
+  daysSinceOwnPost?: number;
   /**
    * True when every fetched activity is recent and more exist, so the
    * real recent rate is higher than shown.
@@ -131,12 +140,34 @@ export function followSummary(
   now: Date,
 ): FollowSummary {
   const oldest = recent.activities[0]?.createdAt;
-  const recentSince = now.getTime() - RECENT_DAYS * 24 * 60 * 60 * 1000;
+  const recentSince = now.getTime() - RECENT_DAYS * DAY_MS;
+  const lastOwnPost = recent.activities
+    .filter((a) => a.type === "organic" || a.type === "quote")
+    .at(-1)?.createdAt;
   return {
     ...summarize(recent.activities, now),
+    lastOwnPost,
+    daysSinceOwnPost: lastOwnPost
+      ? Math.floor((now.getTime() - lastOwnPost.getTime()) / DAY_MS)
+      : undefined,
     recentRateIsMinimum:
       !recent.complete &&
       oldest !== undefined &&
       oldest.getTime() >= recentSince,
   };
+}
+
+export type FollowStatus = "never" | "dormant" | "no-own-posts" | "active";
+
+/**
+ * Dormant: nothing at all in the recent window. No own posts: only
+ * reposts or replies in that window.
+ */
+export function followStatus(summary: FollowSummary): FollowStatus {
+  if (summary.daysSinceLast === undefined) return "never";
+  if (summary.daysSinceLast > RECENT_DAYS) return "dormant";
+  return summary.daysSinceOwnPost !== undefined &&
+    summary.daysSinceOwnPost <= RECENT_DAYS
+    ? "active"
+    : "no-own-posts";
 }

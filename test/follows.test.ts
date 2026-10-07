@@ -4,6 +4,7 @@ import {
   activitiesFromFeed,
   fetchFollows,
   fetchRecentActivity,
+  followStatus,
   followSummary,
 } from "../src/follows";
 
@@ -90,22 +91,28 @@ function pagedFetch(pages: Record<string, unknown>) {
 
 describe("fetchFollows", () => {
   test("follows every page of an account's follows", async () => {
+    const subject = { did: "did:plc:me", handle: "me.test" };
     const { urls, fetchFn } = pagedFetch({
       "": {
+        subject,
         follows: [{ did: "did:plc:a", handle: "a.test" }],
         cursor: "next",
       },
       next: {
+        subject,
         follows: [{ did: "did:plc:b", handle: "b.test", displayName: "B" }],
       },
     });
 
-    expect(await fetchFollows("me.test", fetchFn)).toEqual([
-      { did: "did:plc:a", handle: "a.test" },
-      { did: "did:plc:b", handle: "b.test", displayName: "B" },
-    ]);
+    expect(await fetchFollows("did:plc:me", fetchFn)).toEqual({
+      subject: { did: "did:plc:me", handle: "me.test" },
+      follows: [
+        { did: "did:plc:a", handle: "a.test" },
+        { did: "did:plc:b", handle: "b.test", displayName: "B" },
+      ],
+    });
     expect(urls[0]?.pathname).toBe("/xrpc/app.bsky.graph.getFollows");
-    expect(urls[0]?.searchParams.get("actor")).toBe("me.test");
+    expect(urls[0]?.searchParams.get("actor")).toBe("did:plc:me");
     expect(urls[0]?.searchParams.get("limit")).toBe("100");
   });
 });
@@ -171,5 +178,44 @@ describe("followSummary", () => {
         now,
       ).recentRateIsMinimum,
     ).toBe(false);
+  });
+});
+
+describe("followStatus", () => {
+  const now = new Date("2026-10-01T00:00:00Z");
+  const at = (type: Activity["type"], iso: string): Activity => ({
+    uri: `at://x/${iso}`,
+    type,
+    createdAt: new Date(iso),
+    record: {},
+  });
+  const status = (activities: Activity[]) =>
+    followStatus(followSummary({ activities, complete: true }, now));
+
+  test("never posted", () => {
+    expect(status([])).toBe("never");
+  });
+
+  test("dormant after 90 days without any activity", () => {
+    expect(status([at("organic", "2026-06-01T00:00:00Z")])).toBe("dormant");
+  });
+
+  test("active but without own posts in 90 days", () => {
+    expect(
+      status([
+        at("organic", "2026-05-01T00:00:00Z"),
+        at("repost", "2026-09-20T00:00:00Z"),
+        at("reply", "2026-09-21T00:00:00Z"),
+      ]),
+    ).toBe("no-own-posts");
+  });
+
+  test("active with recent own posts", () => {
+    expect(
+      status([
+        at("repost", "2026-09-20T00:00:00Z"),
+        at("quote", "2026-09-21T00:00:00Z"),
+      ]),
+    ).toBe("active");
   });
 });
