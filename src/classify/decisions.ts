@@ -4,6 +4,8 @@
  * generated text. Billed on input tokens only.
  */
 
+import { runPool } from "../pool";
+
 const ENDPOINT = "https://openrouter.ai/api/alpha/decisions";
 export const DEFAULT_DECISION_MODEL = "cloudflare/clef-flash";
 
@@ -118,36 +120,26 @@ export async function decide(
   options: DecisionOptions,
 ): Promise<DecisionResult> {
   const result: DecisionResult = { answers: new Map(), cost: 0, failed: 0 };
-  let next = 0;
   let done = 0;
-
-  async function worker() {
-    while (next < items.length) {
-      const item = items[next++];
-      if (!item) break;
-      try {
-        const response = await ask(item, questions, options);
-        result.cost += response.usage?.cost ?? 0;
-        result.answers.set(
-          item.id,
-          Object.fromEntries(
-            Object.keys(questions).map((name) => [
-              name,
-              response.answers[name]?.noul ?? Number.NaN,
-            ]),
-          ),
-        );
-      } catch (error) {
-        if (error instanceof FatalError) throw error;
-        result.failed++;
-        result.lastError =
-          error instanceof Error ? error.message : String(error);
-      }
-      options.onProgress?.(++done, items.length);
+  await runPool(items, options.concurrency ?? 8, async (item) => {
+    try {
+      const response = await ask(item, questions, options);
+      result.cost += response.usage?.cost ?? 0;
+      result.answers.set(
+        item.id,
+        Object.fromEntries(
+          Object.keys(questions).map((name) => [
+            name,
+            response.answers[name]?.noul ?? Number.NaN,
+          ]),
+        ),
+      );
+    } catch (error) {
+      if (error instanceof FatalError) throw error;
+      result.failed++;
+      result.lastError = error instanceof Error ? error.message : String(error);
     }
-  }
-
-  const workers = Math.min(options.concurrency ?? 8, items.length);
-  await Promise.all(Array.from({ length: workers }, worker));
+    options.onProgress?.(++done, items.length);
+  });
   return result;
 }
