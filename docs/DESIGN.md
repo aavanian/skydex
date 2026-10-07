@@ -96,11 +96,14 @@ Pluggable `Classifier` interface: `classify(posts) -> tags per post`.
     cost; results cached.
   - Pluggable provider adapters, selected in settings:
     - **Decision API** (first target): OpenRouter
-      `POST https://openrouter.ai/api/alpha/decisions`, model
-      `typesafe/jev-1.13`. Not an LLM: takes `state` plus named typed
-      questions (`noul` yes/no, `choice`, `score`) and returns
-      probabilities, billed on input tokens only. One request per post,
-      one `noul` question per tag. CORS `*` verified 2026-10-07.
+      `POST https://openrouter.ai/api/alpha/decisions`. Takes `state`
+      plus named typed questions (`noul` yes/no, `choice`, `score`) and
+      returns probabilities, billed on input tokens only. One request
+      per post, one `noul` question per tag. CORS `*` verified
+      2026-10-07. Default model `cloudflare/clef-flash`
+      ($0.09/M input tokens); `typesafe/jev-1.13` ($0.042/M) uses the
+      same API but is region-blocked for us on OpenRouter. Cached
+      answers are keyed by model and question set.
     - **Chat LLM** (later): OpenAI-compatible chat completions and the
       Anthropic Messages API, with a free-text model id.
 

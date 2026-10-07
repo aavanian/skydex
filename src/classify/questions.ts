@@ -44,10 +44,13 @@ export const CONTENT_QUESTIONS: Questions = {
   },
 };
 
-/** Short stable fingerprint of a question set, used to version cached answers. */
-export function questionsVersion(questions: Questions): string {
+/**
+ * Short stable fingerprint of a question set and the model answering
+ * it, used to version cached answers.
+ */
+export function questionsVersion(questions: Questions, model: string): string {
   let hash = 0x811c9dc5;
-  for (const char of JSON.stringify(questions)) {
+  for (const char of JSON.stringify([model, questions])) {
     hash = Math.imul(hash ^ char.charCodeAt(0), 0x01000193);
   }
   return (hash >>> 0).toString(36);

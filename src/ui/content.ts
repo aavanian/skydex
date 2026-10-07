@@ -1,7 +1,7 @@
 import type { Activity } from "../activities";
 import { AnswerCache } from "../classify/cache";
 import { contentItems, tagSummary } from "../classify/content";
-import { decide } from "../classify/decisions";
+import { decide, DEFAULT_DECISION_MODEL } from "../classify/decisions";
 import {
   CONTENT_QUESTIONS,
   questionsVersion,
@@ -98,7 +98,7 @@ function results(
 
 /**
  * Card tagging the account's own posts as promotional, snarky or
- * partisan, using the Jev decision model through the viewer's own
+ * partisan, using a decision model through the viewer's own
  * OpenRouter key. Nothing is sent until the viewer asks.
  */
 export function contentCard(
@@ -110,7 +110,7 @@ export function contentCard(
 ): HTMLElement {
   const cache = new AnswerCache(
     browserStorage(),
-    questionsVersion(CONTENT_QUESTIONS),
+    questionsVersion(CONTENT_QUESTIONS, DEFAULT_DECISION_MODEL),
   );
   const since = windowStart(settings, now);
   const body = h("div");
@@ -121,7 +121,7 @@ export function contentCard(
     h(
       "p",
       { className: "subtitle" },
-      `Organic and quote posts from the last ${settings.windowMonths} months, up to ${integer.format(settings.maxShared)}, classified by the Jev decision model on OpenRouter. A post counts when the model gives it ${percent.format(THRESHOLD)} or more.`,
+      `Organic and quote posts from the last ${settings.windowMonths} months, up to ${integer.format(settings.maxShared)}, classified by the ${DEFAULT_DECISION_MODEL} decision model on OpenRouter. A post counts when the model gives it ${percent.format(THRESHOLD)} or more.`,
     ),
     body,
   );
@@ -169,7 +169,7 @@ export function contentCard(
           },
           "OpenRouter key settings",
         ),
-        ": if it ever leaked, that limit is all it could spend. At the documented price, classifying 500 posts should cost about a cent.",
+        ": if it ever leaked, that limit is all it could spend. At the documented price, classifying 500 posts should cost a few cents.",
       ),
     );
   }

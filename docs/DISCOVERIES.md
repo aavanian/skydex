@@ -13,3 +13,8 @@
 - **OpenRouter's Decisions API lives at `/api/alpha/decisions`**
   (401 without a key, CORS `*`). The API reference page also shows
   `/api/v1/api/alpha/decisions`, which returns 404.
+- **`typesafe/jev-1.13` is region-blocked on OpenRouter for us**
+  (403 "This model is not available in your region."), although its
+  only provider, TypeSafe, works directly from the same place. Likely
+  an OpenRouter-side restriction. `cloudflare/clef-flash` serves the
+  same Decisions API (not yet confirmed from our region).

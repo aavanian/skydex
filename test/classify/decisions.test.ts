@@ -47,7 +47,7 @@ describe("decide", () => {
       "Bearer sk-test",
     );
     expect(JSON.parse(String(requests[0]?.init?.body))).toEqual({
-      model: "typesafe/jev-1.13",
+      model: "cloudflare/clef-flash",
       state: { post: "buy my book" },
       questions,
     });

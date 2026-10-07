@@ -1,11 +1,11 @@
 /**
- * Client for OpenRouter's Decisions API: a decision model (Jev) answers
+ * Client for OpenRouter's Decisions API: a decision model answers
  * typed questions about a piece of state with probabilities instead of
  * generated text. Billed on input tokens only.
  */
 
 const ENDPOINT = "https://openrouter.ai/api/alpha/decisions";
-export const DEFAULT_DECISION_MODEL = "typesafe/jev-1.13";
+export const DEFAULT_DECISION_MODEL = "cloudflare/clef-flash";
 
 /** A yes/no question; the answer is the probability of yes. */
 export interface NoulQuestion {
