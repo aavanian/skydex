@@ -8,7 +8,6 @@ import {
   type FollowSummary,
 } from "../follows";
 import type { OAuthSession } from "@atproto/oauth-client";
-import { logIn, logOut } from "../auth/session";
 import { deleteFollow } from "../auth/unfollow";
 import { runPool } from "../pool";
 import { RECENT_DAYS } from "../stats";
@@ -286,7 +285,10 @@ export async function renderFollows(
         session = undefined;
         rows.forEach(refresh);
         showLogin();
-        if (ending) await logOut(ending).catch(() => undefined);
+        if (ending) {
+          const { logOut } = await import("../auth/session");
+          await logOut(ending).catch(() => undefined);
+        }
       });
       login.replaceChildren(
         h(
@@ -304,9 +306,21 @@ export async function renderFollows(
       `Log in as @${subject.handle} to unfollow`,
     );
     button.addEventListener("click", async () => {
+      // Opened synchronously with the click so it is not blocked; the
+      // login library loads only now, on first use.
+      const popup = window.open(
+        "about:blank",
+        "bsky-login",
+        "width=600,height=700",
+      );
+      if (!popup) {
+        setStatus("Allow popups for this page to log in", true);
+        return;
+      }
       button.disabled = true;
       try {
-        session = await logIn(subject.did);
+        const { logIn, logOut } = await import("../auth/session");
+        session = await logIn(subject.did, popup);
         if (session.did !== subject.did) {
           await logOut(session).catch(() => undefined);
           session = undefined;
@@ -317,6 +331,7 @@ export async function renderFollows(
         rows.forEach(refresh);
         showLogin();
       } catch (error) {
+        popup.close();
         button.disabled = false;
         setStatus(error instanceof Error ? error.message : String(error), true);
       }

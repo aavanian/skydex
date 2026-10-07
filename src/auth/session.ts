@@ -52,18 +52,15 @@ function waitForCallback(): Promise<URLSearchParams> {
 }
 
 /**
- * Logs in as `actor` in a popup. Login state and tokens are kept in
- * this page's memory only: closing or reloading the tab ends the
- * session, and nothing is written to browser storage.
+ * Logs in as `actor` in `popup`, a window the caller opened directly
+ * from a click (browsers block popups opened later). Login state and
+ * tokens are kept in this page's memory only: closing or reloading the
+ * tab ends the session, and nothing is written to browser storage.
  */
-export async function logIn(actor: string): Promise<OAuthSession> {
-  // Open the popup first, synchronously with the click, to avoid popup blockers.
-  const popup = window.open(
-    "about:blank",
-    "bsky-login",
-    "width=600,height=700",
-  );
-  if (!popup) throw new Error("Allow popups for this page to log in");
+export async function logIn(
+  actor: string,
+  popup: Window,
+): Promise<OAuthSession> {
   try {
     const url = await oauthClient().authorize(actor, { display: "popup" });
     popup.location.href = url.href;
