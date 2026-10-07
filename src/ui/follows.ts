@@ -1,5 +1,5 @@
 import {
-  fetchFollows,
+  fetchFollowing,
   fetchRecentActivity,
   followStatus,
   followSummary,
@@ -13,12 +13,26 @@ import { h } from "./dom";
 
 const CONCURRENCY = 6;
 
-const STATUS_LABELS: Record<FollowStatus, string> = {
+type DisplayStatus =
+  | FollowStatus
+  | NonNullable<Follow["unavailable"]>
+  | NonNullable<Follow["block"]>;
+
+const STATUS_LABELS: Record<DisplayStatus, string> = {
+  deleted: "Deleted",
+  suspended: "Suspended",
+  deactivated: "Deactivated",
+  "blocks-you": "Blocks you",
+  "you-block": "You block them",
+  hidden: "Hidden by a block",
   never: "Never posted",
   dormant: "Dormant",
   "no-own-posts": "No own posts lately",
   active: "Active",
 };
+
+/** Sort order: gone first, then blocks, then from quietest to active. */
+const STATUS_ORDER = Object.keys(STATUS_LABELS) as DisplayStatus[];
 
 const decimal = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
 const percent = new Intl.NumberFormat(undefined, {
@@ -31,19 +45,12 @@ const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: "medium" });
 interface Row {
   follow: Follow;
   summary?: FollowSummary;
-  status?: FollowStatus;
+  status?: DisplayStatus;
   failed?: boolean;
   element: HTMLTableRowElement;
 }
 
 type SortKey = "account" | "last" | "lastOwn" | "rate" | "organic" | "status";
-
-const STATUS_ORDER: FollowStatus[] = [
-  "never",
-  "dormant",
-  "no-own-posts",
-  "active",
-];
 
 function sortValue(row: Row, key: SortKey): number | string {
   const s = row.summary;
@@ -75,7 +82,7 @@ function fillRow(row: Row): void {
     h(
       "a",
       { href: `?actor=${encodeURIComponent(follow.did)}`, target: "_blank" },
-      `@${follow.handle}`,
+      follow.handle === follow.did ? follow.did : `@${follow.handle}`,
     ),
     follow.displayName
       ? h("div", { className: "footnote" }, follow.displayName)
@@ -85,6 +92,18 @@ function fillRow(row: Row): void {
     row.element.replaceChildren(
       account,
       h("td", { colSpan: 5, className: "footnote" }, "Could not load"),
+    );
+    return;
+  }
+  if (follow.unavailable) {
+    row.element.replaceChildren(
+      account,
+      h("td", { colSpan: 4, className: "footnote" }, "—"),
+      h(
+        "td",
+        { className: "follow-status gone" },
+        STATUS_LABELS[follow.unavailable],
+      ),
     );
     return;
   }
@@ -125,12 +144,18 @@ export async function renderFollows(
   setStatus: (text: string, isError?: boolean) => void,
 ): Promise<void> {
   root.replaceChildren();
-  setStatus(`Loading who @${actor} follows…`);
-  const { subject, follows } = await fetchFollows(actor);
+  setStatus(
+    `Loading who @${actor} follows, and checking unavailable and blocked accounts…`,
+  );
+  const { subject, follows } = await fetchFollowing(actor);
   const now = new Date();
 
   const rows: Row[] = follows.map((follow) => {
-    const row: Row = { follow, element: h("tr") };
+    const row: Row = {
+      follow,
+      element: h("tr"),
+      status: follow.unavailable,
+    };
     fillRow(row);
     return row;
   });
@@ -188,12 +213,15 @@ export async function renderFollows(
 
   const counts = h("p", { className: "subtitle" });
   function updateCounts() {
-    const by = (status: FollowStatus) =>
-      rows.filter((r) => r.status === status).length;
-    counts.textContent =
-      `${integer.format(follows.length)} follows · ` +
-      `${integer.format(by("dormant") + by("never"))} dormant or never posted · ` +
-      `${integer.format(by("no-own-posts"))} with no own posts in ${RECENT_DAYS} days`;
+    const count = (...statuses: DisplayStatus[]) =>
+      rows.filter((r) => r.status && statuses.includes(r.status)).length;
+    counts.textContent = [
+      `${integer.format(follows.length)} follows`,
+      `${integer.format(count("deleted", "suspended", "deactivated"))} gone`,
+      `${integer.format(count("blocks-you"))} block you`,
+      `${integer.format(count("dormant", "never"))} dormant or never posted`,
+      `${integer.format(count("no-own-posts"))} with no own posts in ${RECENT_DAYS} days`,
+    ].join(" · ");
   }
   updateCounts();
 
@@ -206,7 +234,7 @@ export async function renderFollows(
       h(
         "p",
         { className: "footnote" },
-        `Based on each account's latest 100 posts, replies and reposts. Dormant: nothing in ${RECENT_DAYS} days. No own posts lately: only reposts or replies in ${RECENT_DAYS} days.`,
+        `Based on each account's latest 100 posts, replies and reposts. Dormant: nothing in ${RECENT_DAYS} days. No own posts lately: only reposts or replies in ${RECENT_DAYS} days. Gone: deactivated, suspended or deleted. Hidden by a block: no direct block found, so likely a block list.`,
       ),
       h(
         "div",
@@ -216,21 +244,22 @@ export async function renderFollows(
     ),
   );
 
+  const active = rows.filter((r) => !r.follow.unavailable);
   let done = 0;
-  await runPool(rows, CONCURRENCY, async (row) => {
+  await runPool(active, CONCURRENCY, async (row) => {
     try {
       const summary = followSummary(
         await fetchRecentActivity(row.follow.did),
         now,
       );
       row.summary = summary;
-      row.status = followStatus(summary);
+      row.status = row.follow.block ?? followStatus(summary);
     } catch {
       row.failed = true;
     }
     fillRow(row);
     setStatus(
-      `Scanned ${integer.format(++done)} of ${integer.format(rows.length)}…`,
+      `Scanned ${integer.format(++done)} of ${integer.format(active.length)}…`,
     );
   });
   const failed = rows.filter((r) => r.failed).length;

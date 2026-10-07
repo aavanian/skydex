@@ -364,3 +364,10 @@ button.sort {
 .follow-status.active {
   color: var(--text-muted);
 }
+.follow-status.gone,
+.follow-status.blocks-you,
+.follow-status.you-block,
+.follow-status.hidden {
+  color: var(--text-primary);
+  font-weight: 600;
+}

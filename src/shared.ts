@@ -86,16 +86,34 @@ export async function fetchPosts(
   return new Map(posts.map((p) => [p.uri, p.record]));
 }
 
-/** Looks up the current handle of each DID. */
-export async function fetchHandles(
+export interface Profile {
+  did: string;
+  handle: string;
+  displayName?: string;
+}
+
+/**
+ * Profiles of the given DIDs. Deactivated, suspended and deleted
+ * accounts are absent from the result.
+ */
+export async function fetchProfiles(
   dids: string[],
   fetchFn: typeof fetch = fetch,
-): Promise<Map<string, string>> {
-  const profiles = await batchedQuery<{ did: string; handle: string }>(
+): Promise<Map<string, Profile>> {
+  const profiles = await batchedQuery<Profile>(
     "app.bsky.actor.getProfiles",
     "actors",
     dids,
     fetchFn,
   );
-  return new Map(profiles.map((p) => [p.did, p.handle]));
+  return new Map(profiles.map((p) => [p.did, p]));
+}
+
+/** Looks up the current handle of each DID. */
+export async function fetchHandles(
+  dids: string[],
+  fetchFn: typeof fetch = fetch,
+): Promise<Map<string, string>> {
+  const profiles = await fetchProfiles(dids, fetchFn);
+  return new Map([...profiles].map(([did, p]) => [did, p.handle]));
 }

@@ -74,6 +74,14 @@ that dunk are what "partisan" was meant to catch.
      status: never posted, dormant (nothing in 90 days), no own posts
      lately (only reposts or replies), active. Sortable; each row
      opens view 1.
+   - The list comes from the actor's own `app.bsky.graph.follow`
+     records, not `getFollows`, which omits deactivated, suspended and
+     deleted accounts and any follow hidden by a block (about 4% in
+     our first test). Unavailable accounts are classified from
+     `getProfile` errors. A follow hidden by a block is "you block
+     them" if in the actor's block records, "blocks you" if the actor
+     is in theirs (first 5,000 read), else "hidden by a block" (likely
+     a block list).
    - One AppView `getAuthorFeed` request per follow (latest 100
      items, replies included), six at a time. No PDS resolution
      needed. Reposts are dated by AppView index time. When all 100

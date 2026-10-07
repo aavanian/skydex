@@ -1,5 +1,7 @@
 import type { Activity } from "./activities";
-import { APPVIEW } from "./repo";
+import { runPool } from "./pool";
+import { APPVIEW, resolveAccount } from "./repo";
+import { fetchProfiles } from "./shared";
 import { DAY_MS, RECENT_DAYS, summarize, type Summary } from "./stats";
 import { activityType } from "./taxonomy";
 
@@ -7,6 +9,13 @@ export interface Follow {
   did: string;
   handle: string;
   displayName?: string;
+  /** Why the account can no longer be seen, if it cannot. */
+  unavailable?: "deactivated" | "suspended" | "deleted";
+  /**
+   * A block hides this follow: the account blocks you, you block it,
+   * or a block list does (or a block too deep in their records to find).
+   */
+  block?: "blocks-you" | "you-block" | "hidden";
 }
 
 interface FeedItem {
@@ -170,4 +179,121 @@ export function followStatus(summary: FollowSummary): FollowStatus {
     summary.daysSinceOwnPost <= RECENT_DAYS
     ? "active"
     : "no-own-posts";
+}
+
+/** Most block records read per account when looking for a block. */
+const MAX_BLOCK_PAGES = 50;
+
+async function listSubjects(
+  pds: string,
+  repo: string,
+  collection: string,
+  fetchFn: typeof fetch,
+  maxPages = Infinity,
+): Promise<string[]> {
+  const subjects: string[] = [];
+  let cursor: string | undefined;
+  let pages = 0;
+  do {
+    const url = new URL(`${pds}/xrpc/com.atproto.repo.listRecords`);
+    url.searchParams.set("repo", repo);
+    url.searchParams.set("collection", collection);
+    url.searchParams.set("limit", String(PAGE_SIZE));
+    if (cursor) url.searchParams.set("cursor", cursor);
+    const page = await getJson<{
+      records: { value: { subject?: string } }[];
+      cursor?: string;
+    }>(fetchFn, url);
+    for (const r of page.records) {
+      if (r.value.subject) subjects.push(r.value.subject);
+    }
+    cursor = page.records.length ? page.cursor : undefined;
+  } while (cursor && ++pages < maxPages);
+  return subjects;
+}
+
+const UNAVAILABLE: Record<string, Follow["unavailable"]> = {
+  AccountDeactivated: "deactivated",
+  AccountTakedown: "suspended",
+};
+
+async function unavailableReason(
+  did: string,
+  fetchFn: typeof fetch,
+): Promise<Follow["unavailable"]> {
+  const response = await fetchFn(
+    xrpc("app.bsky.actor.getProfile", { actor: did }).toString(),
+  );
+  if (response.ok) return undefined;
+  const { error } = (await response.json()) as { error?: string };
+  return UNAVAILABLE[error ?? ""] ?? "deleted";
+}
+
+async function blocksYou(
+  did: string,
+  you: string,
+  fetchFn: typeof fetch,
+): Promise<boolean> {
+  const { pds } = await resolveAccount(did, fetchFn);
+  const blocked = await listSubjects(
+    pds,
+    did,
+    "app.bsky.graph.block",
+    fetchFn,
+    MAX_BLOCK_PAGES,
+  );
+  return blocked.includes(you);
+}
+
+/**
+ * Every account `actor` follows, read from its own follow records so
+ * that accounts the AppView leaves out of follow lists are included:
+ * deactivated, suspended or deleted ones, and ones hidden by a block.
+ */
+export async function fetchFollowing(
+  actor: string,
+  fetchFn: typeof fetch = fetch,
+): Promise<{ subject: Follow; follows: Follow[] }> {
+  const account = await resolveAccount(actor, fetchFn);
+  const subjects = [
+    ...new Set(
+      await listSubjects(
+        account.pds,
+        account.did,
+        "app.bsky.graph.follow",
+        fetchFn,
+      ),
+    ),
+  ];
+  const [profiles, visible, ownBlocks] = await Promise.all([
+    fetchProfiles([account.did, ...subjects], fetchFn),
+    fetchFollows(account.did, fetchFn),
+    listSubjects(account.pds, account.did, "app.bsky.graph.block", fetchFn),
+  ]);
+  const listed = new Set(visible.follows.map((f) => f.did));
+  const blocked = new Set(ownBlocks);
+
+  const follows: Follow[] = subjects.map((did) => {
+    const profile = profiles.get(did);
+    return profile ? toFollow(profile) : { did, handle: did };
+  });
+  await runPool(follows, 6, async (follow) => {
+    if (!profiles.has(follow.did)) {
+      follow.unavailable = await unavailableReason(follow.did, fetchFn);
+    } else if (!listed.has(follow.did)) {
+      follow.block = blocked.has(follow.did)
+        ? "you-block"
+        : (await blocksYou(follow.did, account.did, fetchFn))
+          ? "blocks-you"
+          : "hidden";
+    }
+  });
+
+  const self = profiles.get(account.did);
+  return {
+    subject: self
+      ? toFollow(self)
+      : { did: account.did, handle: account.handle },
+    follows,
+  };
 }

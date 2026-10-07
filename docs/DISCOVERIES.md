@@ -18,3 +18,8 @@
   only provider, TypeSafe, works directly from the same place. Likely
   an OpenRouter-side restriction. `cloudflare/clef-flash` serves the
   same Decisions API and works from our region (2026-10-07).
+- **`app.bsky.graph.getFollows` silently omits follows**: in one
+  scan it left out about 4% of follow records: deactivated and
+  deleted accounts (not in `getProfiles` either; `getProfile` errors
+  with `AccountDeactivated` / "Profile not found"), and accounts
+  blocking the follower, whose profiles and feeds stay public.
