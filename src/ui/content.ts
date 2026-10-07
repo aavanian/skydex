@@ -10,8 +10,8 @@ import {
 import type { Account } from "../repo";
 import { DEFAULT_SETTINGS, windowStart, type Settings } from "../settings";
 import { h } from "./dom";
+import { keyStore, startLogin } from "./key";
 
-const KEY_STORAGE = "openrouter-api-key";
 const THRESHOLD = 0.5;
 
 const percent = new Intl.NumberFormat(undefined, {
@@ -30,23 +30,6 @@ function browserStorage(): Storage | undefined {
     return localStorage;
   } catch {
     return undefined;
-  }
-}
-
-function loadKey(): string {
-  try {
-    return browserStorage()?.getItem(KEY_STORAGE) ?? "";
-  } catch {
-    return "";
-  }
-}
-
-function storeKey(key: string | undefined): void {
-  try {
-    if (key) browserStorage()?.setItem(KEY_STORAGE, key);
-    else browserStorage()?.removeItem(KEY_STORAGE);
-  } catch {
-    // Key is kept for this page only.
   }
 }
 
@@ -144,28 +127,39 @@ export function contentCard(
   );
 
   function keyForm() {
+    const remember = h("input", { type: "checkbox" });
+    const login = h("button", { type: "button" }, "Log in with OpenRouter");
+    login.addEventListener("click", () => void startLogin(remember.checked));
     const input = h("input", {
       type: "password",
-      placeholder: "OpenRouter API key",
+      placeholder: "or paste an OpenRouter API key",
       autocomplete: "off",
     });
     const form = h(
       "form",
       { className: "lookup" },
       input,
-      h("button", { type: "submit" }, "Save key"),
+      h("button", { type: "submit", className: "secondary" }, "Use key"),
     );
     form.addEventListener("submit", (event) => {
       event.preventDefault();
       if (!input.value.trim()) return;
-      storeKey(input.value.trim());
+      keyStore.set(input.value.trim(), remember.checked);
       void show();
     });
     body.replaceChildren(
+      h("p", {}, login),
+      form,
+      h(
+        "label",
+        { className: "footnote" },
+        remember,
+        " Remember the key on this device (otherwise it is forgotten when the tab closes)",
+      ),
       h(
         "p",
         { className: "footnote" },
-        "Your key stays in this browser and is only sent to openrouter.ai. ",
+        "The key stays in this browser and is only sent to openrouter.ai. Give it a small credit limit in your ",
         h(
           "a",
           {
@@ -173,15 +167,15 @@ export function contentCard(
             target: "_blank",
             rel: "noopener",
           },
-          "Get a key",
+          "OpenRouter key settings",
         ),
+        ": if it ever leaked, that limit is all it could spend. At the documented price, classifying 500 posts should cost about a cent.",
       ),
-      form,
     );
   }
 
   async function show() {
-    const key = loadKey();
+    const key = keyStore.get();
     if (!key) return keyForm();
 
     body.replaceChildren(h("p", { className: "status" }, "Preparing posts…"));
@@ -215,16 +209,20 @@ export function contentCard(
       "Forget key",
     );
     forget.addEventListener("click", () => {
-      storeKey(undefined);
+      keyStore.clear();
       keyForm();
     });
     const output = h("div");
     if (known.size) output.replaceChildren(results(known, texts));
 
-    status.textContent = pending.length
-      ? `${integer.format(pending.length)} posts not yet classified` +
-        (known.size ? `, ${integer.format(known.size)} remembered.` : ".")
-      : `All ${integer.format(items.length)} posts already classified.`;
+    status.textContent =
+      (pending.length
+        ? `${integer.format(pending.length)} posts not yet classified` +
+          (known.size ? `, ${integer.format(known.size)} remembered.` : ".")
+        : `All ${integer.format(items.length)} posts already classified.`) +
+      (keyStore.remembered()
+        ? " Key remembered on this device."
+        : " Key kept until this tab closes.");
 
     run.addEventListener("click", async () => {
       run.disabled = true;

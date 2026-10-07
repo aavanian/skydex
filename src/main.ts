@@ -3,6 +3,7 @@ import { activitiesFromCar } from "./activities";
 import { actorFromInput } from "./actor-input";
 import { downloadRepo, resolveAccount } from "./repo";
 import { h } from "./ui/dom";
+import { finishLogin } from "./ui/key";
 import { renderProfile } from "./ui/profile";
 
 const app = document.querySelector<HTMLElement>("#app");
@@ -71,4 +72,12 @@ form.addEventListener("submit", (event) => {
 });
 
 const initial = new URLSearchParams(location.search).get("actor");
-if (initial) analyzeFromInput(initial);
+finishLogin().then(
+  () => {
+    if (initial) analyzeFromInput(initial);
+  },
+  (error: unknown) => {
+    if (initial) input.value = initial;
+    setStatus(error instanceof Error ? error.message : String(error), true);
+  },
+);

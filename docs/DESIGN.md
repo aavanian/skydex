@@ -9,7 +9,9 @@ building block lists or starter packs.
 ## Shape
 
 - Static web app (Vite + TypeScript), no server, no auth. Hostable on
-  any static host (e.g. GitHub Pages).
+  any static host, but on an origin of its own: pages sharing an
+  origin (e.g. `<user>.github.io/<repo>`) can read each other's browser
+  storage, including the OpenRouter key.
 - All fetching and analysis happen in the browser. Results cached in
   IndexedDB, keyed by DID + repo revision.
 - Entry points:
@@ -80,7 +82,13 @@ Pluggable `Classifier` interface: `classify(posts) -> tags per post`.
   - Partisan politics: none. Too hard for keywords; it waits until the
     model-backed classifier can be tested on real accounts.
 - **Model-backed (optional, bring your own key)**
-  - Key kept in browser storage, sent only to the chosen provider.
+  - Key obtained by OpenRouter's browser login (OAuth PKCE) or pasted.
+    Kept in session storage by default, local storage only when the
+    viewer ticks "remember". Sent only to the chosen provider.
+  - Anything running in the page can read the key, so: a
+    Content-Security-Policy restricts the built page to its own
+    scripts, all untrusted text is inserted as text, and the UI asks
+    for a key with a small credit limit.
   - Classifies a sample (latest N organic + quote posts) to bound
     cost; results cached.
   - Pluggable provider adapters, selected in settings:
