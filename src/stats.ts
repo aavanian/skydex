@@ -12,9 +12,12 @@ export interface Summary {
   lastOrganic?: Date;
   daysSinceLast?: number;
   perWeek: number;
+  /** Activities per week over the last {@link RECENT_DAYS} days. */
+  recentPerWeek: number;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+export const RECENT_DAYS = 90;
 
 function zeroCounts(): CountsByType {
   return { organic: 0, quote: 0, reply: 0, repost: 0 };
@@ -24,8 +27,11 @@ function zeroCounts(): CountsByType {
 export function summarize(activities: Activity[], now: Date): Summary {
   const counts = zeroCounts();
   let lastOrganic: Date | undefined;
+  let recent = 0;
+  const recentSince = now.getTime() - RECENT_DAYS * DAY_MS;
   for (const a of activities) {
     counts[a.type]++;
+    if (a.createdAt.getTime() >= recentSince) recent++;
     if (a.type === "organic") lastOrganic = a.createdAt;
   }
 
@@ -50,6 +56,7 @@ export function summarize(activities: Activity[], now: Date): Summary {
       ? Math.floor((now.getTime() - last.getTime()) / DAY_MS)
       : undefined,
     perWeek: weeks > 0 ? total / weeks : 0,
+    recentPerWeek: recent / (RECENT_DAYS / 7),
   };
 }
 

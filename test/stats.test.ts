@@ -69,6 +69,19 @@ describe("summarize", () => {
     expect(summary.perWeek).toBe(0.5);
   });
 
+  test("averages activities per week over the last 90 days", () => {
+    const summary = summarize(
+      [
+        activity("organic", "2024-01-01T00:00:00.000Z"),
+        activity("organic", "2025-01-15T00:00:00.000Z"),
+        activity("repost", "2025-02-15T00:00:00.000Z"),
+      ],
+      now,
+    );
+
+    expect(summary.recentPerWeek).toBeCloseTo(2 / (90 / 7));
+  });
+
   test("an empty history has zero shares and no dates", () => {
     const summary = summarize([], now);
 
@@ -78,6 +91,7 @@ describe("summarize", () => {
     expect(summary.last).toBeUndefined();
     expect(summary.daysSinceLast).toBeUndefined();
     expect(summary.perWeek).toBe(0);
+    expect(summary.recentPerWeek).toBe(0);
   });
 });
 
