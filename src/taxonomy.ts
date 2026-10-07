@@ -8,18 +8,30 @@ const QUOTE_EMBEDS = new Set([
 ]);
 
 interface PostLike {
-  reply?: unknown;
+  reply?: { root?: { uri?: string }; parent?: { uri?: string } };
   embed?: { $type?: string };
 }
 
+function isOwn(did: string, uri: string | undefined): boolean {
+  return uri?.startsWith(`at://${did}/`) ?? false;
+}
+
 /**
- * Classifies a repo record into one activity type. A reply that quotes
- * another post counts as a reply: it is conversation, not broadcast.
+ * Classifies a repo record into one activity type. Continuing one's
+ * own thread (root and parent both by the account) is posting, not
+ * replying. Any other reply counts as a reply even when it quotes
+ * another post: it is conversation, not broadcast.
  */
-export function activityType(collection: string, record: object): ActivityType {
+export function activityType(
+  did: string,
+  collection: string,
+  record: object,
+): ActivityType {
   if (collection === "app.bsky.feed.repost") return "repost";
   const post = record as PostLike;
-  if (post.reply) return "reply";
+  const selfThread =
+    isOwn(did, post.reply?.root?.uri) && isOwn(did, post.reply?.parent?.uri);
+  if (post.reply && !selfThread) return "reply";
   if (post.embed?.$type && QUOTE_EMBEDS.has(post.embed.$type)) return "quote";
   return "organic";
 }

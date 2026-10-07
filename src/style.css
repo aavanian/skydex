@@ -240,7 +240,14 @@ h3.column-title {
 .terms-columns {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 24px;
+  column-gap: 24px;
+}
+/* Columns share row tracks so the lists line up under clouds of different heights. */
+.terms-column {
+  display: grid;
+  grid-row: span 4;
+  grid-template-rows: subgrid;
+  align-content: start;
 }
 .cloud {
   list-style: none;
@@ -300,4 +307,7 @@ ul.examples a {
 .count {
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
+}
+.terms-column .ranked-grid {
+  margin-bottom: 16px;
 }

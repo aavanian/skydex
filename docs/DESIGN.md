@@ -42,6 +42,9 @@ classified as exactly one of:
   `recordWithMedia`.
 - **reply**: post with a `reply` field. Own category, shown alongside
   the others but excluded from the content-tag denominators.
+  Continuing one's own thread (reply whose root and parent are both
+  by the account) is not a reply: it is classified as quote or
+  organic like a top-level post.
 - **organic**: any other post.
 
 Organic and quote posts are further tagged by the content classifier:

@@ -40,7 +40,7 @@ export function activitiesFrom(
     if (Number.isNaN(createdAt.getTime())) continue;
     activities.push({
       uri: `at://${did}/${collection}/${rkey}`,
-      type: activityType(collection, record),
+      type: activityType(did, collection, record),
       createdAt,
       record,
     });
