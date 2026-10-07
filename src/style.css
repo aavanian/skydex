@@ -348,6 +348,10 @@ nav.modes a[aria-current="page"] {
 .follows th {
   vertical-align: bottom;
 }
+.follows td.follow-status {
+  white-space: normal;
+  min-width: 6em;
+}
 .follows td.account {
   white-space: normal;
   overflow-wrap: break-word;
@@ -357,8 +361,8 @@ nav.modes a[aria-current="page"] {
   background: var(--band);
 }
 /* Room for "Confirm Cancel" from the start, so confirming never widens the table. */
-table.can-unfollow td.action {
-  width: 10.5em;
+table.can-unfollow .action-slot {
+  min-width: 10.5em;
   text-align: left;
 }
 a.external {

@@ -56,9 +56,12 @@ interface Row {
    * survives scan updates, and only this cell changes when acting.
    */
   actionCell: HTMLTableCellElement;
+  /** Holds the actions; its minimum width reserves the column's room. */
+  actionSlot: HTMLDivElement;
 }
 
-type SortKey = "account" | "last" | "lastOwn" | "rate" | "organic" | "status";
+type SortKey =
+  "account" | "last" | "lastOwn" | "rate" | "organic" | "repost" | "status";
 
 function sortValue(row: Row, key: SortKey): number | string {
   const s = row.summary;
@@ -73,6 +76,8 @@ function sortValue(row: Row, key: SortKey): number | string {
       return s?.recentPerWeek ?? 0;
     case "organic":
       return s?.shares.organic ?? 0;
+    case "repost":
+      return s?.shares.repost ?? 0;
     case "status":
       return row.status ? STATUS_ORDER.indexOf(row.status) : -1;
   }
@@ -149,7 +154,7 @@ function fillRow(row: Row): void {
   if (row.failed) {
     row.element.replaceChildren(
       account,
-      h("td", { colSpan: 5, className: "footnote" }, "Could not load"),
+      h("td", { colSpan: 6, className: "footnote" }, "Could not load"),
       row.actionCell,
     );
     return;
@@ -157,7 +162,7 @@ function fillRow(row: Row): void {
   if (follow.unavailable) {
     row.element.replaceChildren(
       account,
-      ...[1, 2, 3, 4].map(() => h("td", {}, "—")),
+      ...[1, 2, 3, 4, 5].map(() => h("td", {}, "—")),
       h(
         "td",
         { className: "follow-status gone" },
@@ -170,7 +175,7 @@ function fillRow(row: Row): void {
   if (!summary || !status) {
     row.element.replaceChildren(
       account,
-      h("td", { colSpan: 5, className: "footnote" }, "…"),
+      h("td", { colSpan: 6, className: "footnote" }, "…"),
       row.actionCell,
     );
     return;
@@ -190,6 +195,7 @@ function fillRow(row: Row): void {
         (summary.recentRateIsMinimum ? "+" : ""),
     ),
     h("td", {}, summary.total ? percent.format(summary.shares.organic) : "—"),
+    h("td", {}, summary.total ? percent.format(summary.shares.repost) : "—"),
     h("td", { className: `follow-status ${status}` }, STATUS_LABELS[status]),
     row.actionCell,
   );
@@ -215,7 +221,7 @@ export async function renderFollows(
 
   /** Shows what can be done with a row: nothing, unfollow, or confirm. */
   function renderAction(row: Row): void {
-    const cell = row.actionCell;
+    const cell = row.actionSlot;
     const uri = row.follow.followUri;
     if (row.unfollowed) {
       cell.replaceChildren(
@@ -276,8 +282,10 @@ export async function renderFollows(
       follow,
       element: h("tr"),
       actionCell: h("td", { className: "action" }),
+      actionSlot: h("div", { className: "action-slot" }),
       status: follow.unavailable,
     };
+    row.actionCell.append(row.actionSlot);
     fillRow(row);
     return row;
   });
@@ -293,6 +301,7 @@ export async function renderFollows(
     ["lastOwn", "Last own post"],
     ["rate", `Per week, ${RECENT_DAYS} days`],
     ["organic", "Organic share"],
+    ["repost", "Repost share"],
     ["status", "Status"],
   ];
   function sort() {
