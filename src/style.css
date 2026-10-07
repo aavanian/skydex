@@ -280,3 +280,24 @@ ol.ranked .count {
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
 }
+.tags {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-top: 12px;
+}
+ul.examples {
+  padding-left: 16px;
+  margin: 4px 0 0;
+}
+ul.examples li {
+  margin: 4px 0;
+  overflow-wrap: anywhere;
+}
+ul.examples a {
+  color: var(--text-primary);
+}
+.count {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}

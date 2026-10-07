@@ -5,6 +5,9 @@ import { monthlyMix, RECENT_DAYS, summarize, type Summary } from "../stats";
 import { ACTIVITY_TYPES, type ActivityType } from "../taxonomy";
 import { cssVar, h } from "./dom";
 import { termsCard } from "./terms";
+import { contentCard } from "./content";
+import { fetchPosts, sharedUris } from "../shared";
+import { DEFAULT_SETTINGS, windowStart } from "../settings";
 
 const TYPE_LABELS: Record<ActivityType, string> = {
   organic: "Organic",
@@ -289,13 +292,28 @@ export function renderProfile(
   now = new Date(),
 ): void {
   const summary = summarize(activities, now);
+  const uris = sharedUris(
+    activities,
+    windowStart(DEFAULT_SETTINGS, now),
+    DEFAULT_SETTINGS.maxShared,
+  );
+  const shared = fetchPosts(uris).then((posts) => ({
+    requested: uris.length,
+    posts,
+  }));
   root.replaceChildren(
     summaryCard(account, summary, now),
     ...(activities.length
       ? [
           mixCard(activities, now),
           timelineCard(activities, now),
-          termsCard(activities, now),
+          termsCard(activities, shared, now),
+          contentCard(
+            account,
+            activities,
+            shared.then((s) => s.posts).catch(() => new Map()),
+            now,
+          ),
         ]
       : []),
   );

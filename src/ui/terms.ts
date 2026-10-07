@@ -1,6 +1,6 @@
 import type { Activity } from "../activities";
 import { DEFAULT_SETTINGS, windowStart, type Settings } from "../settings";
-import { fetchHandles, fetchPosts, sharedUris } from "../shared";
+import { fetchHandles } from "../shared";
 import { termsOf, topTerms, type TermCount, type TopTerms } from "../terms";
 import { h } from "./dom";
 
@@ -87,11 +87,12 @@ function column(
 
 /**
  * Card comparing what the account writes itself with what it reposts
- * and quotes, over the analysis window. Shared posts are fetched after
- * the card is shown.
+ * and quotes, over the analysis window. Shared posts arrive after the
+ * card is shown.
  */
 export function termsCard(
   activities: Activity[],
+  sharedPosts: Promise<{ requested: number; posts: Map<string, object> }>,
   now: Date,
   settings: Settings = DEFAULT_SETTINGS,
 ): HTMLElement {
@@ -119,8 +120,7 @@ export function termsCard(
       const own = recent
         .filter((a) => a.type === "organic" || a.type === "quote")
         .map((a) => termsOf(a.record));
-      const uris = sharedUris(activities, since, settings.maxShared);
-      const posts = await fetchPosts(uris);
+      const { requested, posts } = await sharedPosts;
       const shared = [...posts.values()].map(termsOf);
 
       const ownTop = topTerms(own);
@@ -131,7 +131,7 @@ export function termsCard(
       ].map((m) => m.term);
       const handles = await fetchHandles([...new Set(dids)]);
 
-      const missing = uris.length - posts.size;
+      const missing = requested - posts.size;
       body.className = "terms-columns";
       body.replaceChildren(
         column("Own", `${integer.format(own.length)} posts`, ownTop, handles),
@@ -141,7 +141,7 @@ export function termsCard(
             (missing
               ? ` (${integer.format(missing)} deleted or unavailable)`
               : "") +
-            (uris.length >= settings.maxShared
+            (requested >= settings.maxShared
               ? `, capped at the latest ${integer.format(settings.maxShared)}`
               : ""),
           sharedTop,

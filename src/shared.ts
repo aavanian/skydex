@@ -8,7 +8,8 @@ interface QuoteEmbed {
   record?: { uri?: string; record?: { uri?: string } };
 }
 
-function sharedUri(activity: Activity): string | undefined {
+/** URI of the post a repost or quote points to. */
+export function sharedUri(activity: Activity): string | undefined {
   if (activity.type === "repost") {
     return (activity.record as { subject?: { uri?: string } }).subject?.uri;
   }
