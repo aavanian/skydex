@@ -9,6 +9,8 @@ export interface Follow {
   did: string;
   handle: string;
   displayName?: string;
+  /** The follow record itself, when read from the follower's repo. */
+  followUri?: string;
   /** Why the account can no longer be seen, if it cannot. */
   unavailable?: "deactivated" | "suspended" | "deleted";
   /**
@@ -184,14 +186,19 @@ export function followStatus(summary: FollowSummary): FollowStatus {
 /** Most block records read per account when looking for a block. */
 const MAX_BLOCK_PAGES = 50;
 
+interface SubjectRecord {
+  uri: string;
+  subject: string;
+}
+
 async function listSubjects(
   pds: string,
   repo: string,
   collection: string,
   fetchFn: typeof fetch,
   maxPages = Infinity,
-): Promise<string[]> {
-  const subjects: string[] = [];
+): Promise<SubjectRecord[]> {
+  const found: SubjectRecord[] = [];
   let cursor: string | undefined;
   let pages = 0;
   do {
@@ -201,15 +208,15 @@ async function listSubjects(
     url.searchParams.set("limit", String(PAGE_SIZE));
     if (cursor) url.searchParams.set("cursor", cursor);
     const page = await getJson<{
-      records: { value: { subject?: string } }[];
+      records: { uri: string; value: { subject?: string } }[];
       cursor?: string;
     }>(fetchFn, url);
     for (const r of page.records) {
-      if (r.value.subject) subjects.push(r.value.subject);
+      if (r.value.subject) found.push({ uri: r.uri, subject: r.value.subject });
     }
     cursor = page.records.length ? page.cursor : undefined;
   } while (cursor && ++pages < maxPages);
-  return subjects;
+  return found;
 }
 
 const UNAVAILABLE: Record<string, Follow["unavailable"]> = {
@@ -242,7 +249,7 @@ async function blocksYou(
     fetchFn,
     MAX_BLOCK_PAGES,
   );
-  return blocked.includes(you);
+  return blocked.some((b) => b.subject === you);
 }
 
 /**
@@ -255,27 +262,30 @@ export async function fetchFollowing(
   fetchFn: typeof fetch = fetch,
 ): Promise<{ subject: Follow; follows: Follow[] }> {
   const account = await resolveAccount(actor, fetchFn);
-  const subjects = [
-    ...new Set(
-      await listSubjects(
-        account.pds,
-        account.did,
-        "app.bsky.graph.follow",
-        fetchFn,
-      ),
-    ),
-  ];
+  const followRecords = new Map<string, string>();
+  for (const { subject, uri } of await listSubjects(
+    account.pds,
+    account.did,
+    "app.bsky.graph.follow",
+    fetchFn,
+  )) {
+    if (!followRecords.has(subject)) followRecords.set(subject, uri);
+  }
+  const subjects = [...followRecords.keys()];
   const [profiles, visible, ownBlocks] = await Promise.all([
     fetchProfiles([account.did, ...subjects], fetchFn),
     fetchFollows(account.did, fetchFn),
     listSubjects(account.pds, account.did, "app.bsky.graph.block", fetchFn),
   ]);
   const listed = new Set(visible.follows.map((f) => f.did));
-  const blocked = new Set(ownBlocks);
+  const blocked = new Set(ownBlocks.map((b) => b.subject));
 
   const follows: Follow[] = subjects.map((did) => {
     const profile = profiles.get(did);
-    return profile ? toFollow(profile) : { did, handle: did };
+    return {
+      ...(profile ? toFollow(profile) : { did, handle: did }),
+      followUri: followRecords.get(did),
+    };
   });
   await runPool(follows, 6, async (follow) => {
     if (!profiles.has(follow.did)) {

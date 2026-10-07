@@ -22,12 +22,14 @@ const follows = [ok, blocksMe, iBlock, listHidden]
   .map((f) => f.did)
   .concat([deactivated, deleted, suspended]);
 
-function records(subjects: string[]) {
-  return subjects.map((subject, i) => ({
-    uri: `at://x/c/${i}`,
+function records(subjects: string[], repo = "did:plc:x") {
+  return subjects.map((subject) => ({
+    uri: `at://${repo}/app.bsky.graph.follow/f-${subject.split(":").at(-1)}`,
     value: { subject },
   }));
 }
+const followUri = (did: string) =>
+  `at://${me}/app.bsky.graph.follow/f-${did.split(":").at(-1)}`;
 
 const profileErrors: Record<string, [string, string]> = {
   [deactivated]: ["AccountDeactivated", "Account is deactivated"],
@@ -49,8 +51,8 @@ const fetchFn: typeof fetch = async (input) => {
       const collection = q.get("collection");
       if (repo === me && collection === "app.bsky.graph.follow") {
         return q.get("cursor")
-          ? json({ records: records(follows.slice(4)) })
-          : json({ records: records(follows.slice(0, 4)), cursor: "p2" });
+          ? json({ records: records(follows.slice(4), me) })
+          : json({ records: records(follows.slice(0, 4), me), cursor: "p2" });
       }
       if (repo === me && collection === "app.bsky.graph.block") {
         return json({ records: records([iBlock.did]) });
@@ -83,12 +85,27 @@ test("lists every followed account from the follow records, with why some are un
 
   expect(subject).toEqual({ did: me, handle: "me.test" });
   expect(result).toEqual([
-    ok,
-    { ...blocksMe, block: "blocks-you" },
-    { ...iBlock, block: "you-block" },
-    { ...listHidden, block: "hidden" },
-    { did: deactivated, handle: deactivated, unavailable: "deactivated" },
-    { did: deleted, handle: deleted, unavailable: "deleted" },
-    { did: suspended, handle: suspended, unavailable: "suspended" },
+    { ...ok, followUri: followUri(ok.did) },
+    { ...blocksMe, followUri: followUri(blocksMe.did), block: "blocks-you" },
+    { ...iBlock, followUri: followUri(iBlock.did), block: "you-block" },
+    { ...listHidden, followUri: followUri(listHidden.did), block: "hidden" },
+    {
+      did: deactivated,
+      handle: deactivated,
+      followUri: followUri(deactivated),
+      unavailable: "deactivated",
+    },
+    {
+      did: deleted,
+      handle: deleted,
+      followUri: followUri(deleted),
+      unavailable: "deleted",
+    },
+    {
+      did: suspended,
+      handle: suspended,
+      followUri: followUri(suspended),
+      unavailable: "suspended",
+    },
   ]);
 });
