@@ -16,9 +16,7 @@ describe("clientMetadataFor", () => {
       new URL("http://127.0.0.1:5179/?follows=me"),
     );
 
-    expect(metadata.redirect_uris).toEqual([
-      "http://127.0.0.1:5179/callback.html",
-    ]);
+    expect(metadata.redirect_uris).toEqual(["http://127.0.0.1:5179/callback/"]);
     expect(metadata.scope).toBe(UNFOLLOW_SCOPE);
     expect(metadata.client_id).toMatch(/^http:\/\/localhost\?/);
     expect(new URL(metadata.client_id).searchParams.get("scope")).toBe(
@@ -33,8 +31,9 @@ describe("clientMetadataFor", () => {
 
     expect(metadata).toMatchObject({
       client_id: "https://profile.example/app/client-metadata.json",
+      client_name: "Skydex",
       client_uri: "https://profile.example/app/",
-      redirect_uris: ["https://profile.example/app/callback.html"],
+      redirect_uris: ["https://profile.example/app/callback/"],
       scope: UNFOLLOW_SCOPE,
       token_endpoint_auth_method: "none",
       dpop_bound_access_tokens: true,

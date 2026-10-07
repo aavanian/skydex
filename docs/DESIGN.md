@@ -1,5 +1,7 @@
 # Design
 
+Skydex: profiles of Bluesky accounts.
+
 ## Purpose
 
 Give data about a single Bluesky / atproto account to support a
@@ -99,15 +101,18 @@ Optional atproto OAuth login, requested scope
   logs out ("Log out" also revokes server-side). The browser package
   was not used because it always persists to IndexedDB.
 - Login runs in a popup so the page, which holds the in-memory state,
-  never navigates. `callback.html` only relays the authorization
+  never navigates. `callback/index.html` only relays the authorization
   response to the page over a BroadcastChannel and closes.
 - Unfollow deletes the follow record (`com.atproto.repo.deleteRecord`)
   read by the scan, after a confirmation, one account at a time. This
   also works for accounts that block you, which the Bluesky app does
   not list.
 - Locally the client is a loopback client (served on `127.0.0.1`).
-  Hosted, it needs `client-metadata.json` next to the page, generated
-  from `clientMetadataFor` at deployment.
+  Hosted, `client-metadata.json` is emitted by the build from
+  `clientMetadataFor` for `SKYDEX_PUBLIC_URL`, so the file and the
+  runtime client always agree. The redirect URI is the folder
+  `callback/`, since Cloudflare Pages redirects `*.html` addresses to
+  extensionless ones.
 
 ## Classification
 

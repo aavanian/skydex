@@ -1,7 +1,13 @@
 {
-  "name": "bsky-user-analysis",
+  "name": "skydex",
   "private": true,
   "version": "0.0.0",
+  "description": "Profiles of Bluesky accounts, to decide whom to follow, unfollow or mute.",
+  "license": "AGPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aavanian/skydex"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -32,5 +38,6 @@
     "typescript-eslint": "^8.70.1",
     "vite": "^8.3.0",
     "vitest": "^5.0.1"
-  }
+  },
+  "packageManager": "pnpm@12.4.1"
 }

@@ -1,7 +1,7 @@
-# Bluesky account profile
+# Skydex
 
-A static web page that profiles a Bluesky account from its public
-data, to help decide whether to follow, unfollow, mute or block it:
+Profiles of Bluesky accounts. A static web page that profiles an
+account from its public data, to help decide whether to follow, unfollow, mute or block it:
 how much it posts, reposts, quotes and replies, whether it has gone
 quiet, what it talks about, and (with an OpenRouter key) how much of
 it is promotional, snarky or political.
@@ -64,3 +64,21 @@ question wordings against posts you have labelled:
 Labels can cover any tag the app reports: `promotional`, `snark`,
 `politics`, and the derived `political_snark` (politics and snark
 both holding).
+
+## Deploy
+
+Skydex is a static site; any static host on an origin of its own
+works (pages sharing an origin can read each other's browser storage).
+It runs at <https://skydex.avanian.net> on Cloudflare Pages:
+
+- Build command `pnpm build`, output directory `dist`.
+- `SKYDEX_PUBLIC_URL` (default `https://skydex.avanian.net/`) is the
+  address the build writes into `client-metadata.json`, which Bluesky
+  fetches to identify the app for the unfollow login. Login only works
+  on that address.
+- The build also writes Cloudflare's `_headers`, carrying the
+  Content-Security-Policy with `frame-ancestors 'none'`.
+
+## License
+
+AGPL-3.0-or-later. See `LICENSE`.

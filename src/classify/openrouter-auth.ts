@@ -7,7 +7,7 @@
 
 const AUTH_URL = "https://openrouter.ai/auth";
 const EXCHANGE_URL = "https://openrouter.ai/api/v1/auth/keys";
-const KEY_LABEL = "Bluesky account profile";
+const KEY_LABEL = "Skydex";
 
 function base64url(bytes: Uint8Array): string {
   return btoa(String.fromCharCode(...bytes))

@@ -23,7 +23,7 @@ describe("OpenRouter login", () => {
       code_challenge: "chal",
       code_challenge_method: "S256",
       state: "st",
-      key_label: "Bluesky account profile",
+      key_label: "Skydex",
     });
   });
 

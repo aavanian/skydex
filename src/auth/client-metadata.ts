@@ -19,7 +19,7 @@ export function clientMetadataFor(
   location: URL,
 ): OAuthClientMetadataInput & { client_id: string } {
   const base = new URL(".", location);
-  const redirectUri = new URL("callback.html", base).href;
+  const redirectUri = new URL("callback/", base).href;
 
   if (location.protocol === "http:" && LOOPBACK_HOSTS.has(location.hostname)) {
     return buildAtprotoLoopbackClientMetadata({
@@ -32,7 +32,7 @@ export function clientMetadataFor(
   }
   return {
     client_id: new URL("client-metadata.json", base).href,
-    client_name: "Bluesky account profile",
+    client_name: "Skydex",
     client_uri: base.href,
     redirect_uris: [redirectUri],
     scope: UNFOLLOW_SCOPE,
