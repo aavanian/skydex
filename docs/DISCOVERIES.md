@@ -10,3 +10,6 @@
   reposted text takes separate `getPosts` calls.
 - **bsky.app sends no Content-Security-Policy header**, only
   `X-Frame-Options: SAMEORIGIN`, so a bookmarklet is not blocked.
+- **OpenRouter's Decisions API lives at `/api/alpha/decisions`**
+  (401 without a key, CORS `*`). The API reference page also shows
+  `/api/v1/api/alpha/decisions`, which returns 404.

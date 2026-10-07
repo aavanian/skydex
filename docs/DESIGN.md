@@ -76,18 +76,22 @@ Pluggable `Classifier` interface: `classify(posts) -> tags per post`.
     same domain repeatedly linked, self-promotion phrases ("my new",
     "out now", "subscribe", "pre-order", ...), shop / newsletter /
     crowdfunding domains.
-  - Partisan politics: curated keyword/entity list (parties,
-    politicians, elections) for US politics, in English and French.
   - Snark: very weak heuristics only; reported as low-confidence.
-- **LLM (optional, bring your own key)**
-  - Pluggable provider adapters, selected in settings with a
-    free-text model id:
-    - OpenAI-compatible chat completions (first target: OpenRouter;
-      also covers OpenAI and local servers exposing that API).
-    - Anthropic Messages API (direct browser access header).
+  - Partisan politics: none. Too hard for keywords; it waits until the
+    model-backed classifier can be tested on real accounts.
+- **Model-backed (optional, bring your own key)**
   - Key kept in browser storage, sent only to the chosen provider.
-  - Classifies a sample (e.g. latest N organic + quote posts) to bound
+  - Classifies a sample (latest N organic + quote posts) to bound
     cost; results cached.
+  - Pluggable provider adapters, selected in settings:
+    - **Decision API** (first target): OpenRouter
+      `POST https://openrouter.ai/api/alpha/decisions`, model
+      `typesafe/jev-1.13`. Not an LLM: takes `state` plus named typed
+      questions (`noul` yes/no, `choice`, `score`) and returns
+      probabilities, billed on input tokens only. One request per post,
+      one `noul` question per tag. CORS `*` verified 2026-10-07.
+    - **Chat LLM** (later): OpenAI-compatible chat completions and the
+      Anthropic Messages API, with a free-text model id.
 
 Topic extraction for the cloud: tokenisation + stopwords + hashtags +
 link domains, with TF-IDF against a baseline; LLM topics optional.
@@ -96,8 +100,8 @@ link domains, with TF-IDF against a baseline; LLM topics optional.
 
 Stored per browser, with these defaults:
 
-- Hydration / LLM window: last 12 months.
-- Max posts hydrated / sent to the LLM: 500.
+- Hydration / classifier window: last 12 months.
+- Max posts hydrated / sent to the classifier: 500.
 - Follows scan account: your own handle, remembered after first use.
 
 ## Testing
