@@ -27,6 +27,9 @@ pnpm test:live    # tests against the real Bluesky network
 Use `127.0.0.1`, not `localhost`: Bluesky's OAuth only accepts
 loopback IP addresses for local development.
 
+The privacy page (`privacy/`) and guide (`guide/`) are static pages
+built alongside the app; keep them in step with what the code does.
+
 See `docs/DESIGN.md` for how it works and `docs/DISCOVERIES.md` for
 API quirks.
 

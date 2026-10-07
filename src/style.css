@@ -404,11 +404,27 @@ h1 .tagline {
   font-weight: 400;
   margin-left: 6px;
 }
-footer {
+footer.site-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px 16px;
   margin-top: 32px;
 }
-footer a {
+footer.site-footer a {
   color: inherit;
+}
+footer.site-footer a.source {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+}
+footer.site-footer a.source svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
 }
 a.bookmarklet {
   display: inline-block;
@@ -446,4 +462,27 @@ label.setting input {
   border: 1px solid var(--border);
   border-radius: 6px;
   max-width: 320px;
+}
+h1 a.home {
+  color: inherit;
+  text-decoration: none;
+}
+.prose p,
+.prose dd,
+.prose li {
+  max-width: 72ch;
+}
+.prose dt {
+  font-weight: 600;
+  margin-top: 10px;
+}
+.prose dd {
+  margin: 2px 0 0;
+  color: var(--text-secondary);
+}
+.prose a {
+  color: inherit;
+}
+.prose code {
+  font-size: 0.92em;
 }

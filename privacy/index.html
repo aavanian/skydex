@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Skydex: privacy</title>
+    <meta name="description" content="How data flows when you use Skydex." />
+  </head>
+  <body>
+    <main class="page">
+      <h1>
+        <a href="../" class="home">Skydex</a>
+        <span class="tagline">Privacy and data flow</span>
+      </h1>
+      <nav class="modes">
+        <a href="../">Account profile</a>
+        <a href="../?follows=">Follows scan</a>
+        <a href="../?settings">Settings</a>
+      </nav>
+
+      <section class="card prose">
+        <h2>In short</h2>
+        <p>
+          Skydex has no server of its own and collects nothing. Your browser
+          downloads the app once, then does all the work itself: it fetches
+          public Bluesky data directly from Bluesky's services and analyses it
+          on your device. Nothing you look up is sent to the author of Skydex.
+        </p>
+      </section>
+
+      <section class="card prose">
+        <h2>Who sees what</h2>
+        <dl>
+          <dt>skydex.avanian.net (hosted on Cloudflare)</dt>
+          <dd>
+            Serves the app's files. Like any website, Cloudflare logs requests
+            (IP address, browser, pages requested) under
+            <a href="https://www.cloudflare.com/privacypolicy/"
+              >its own policy</a
+            >. Skydex sets no cookies and runs no analytics or tracking script.
+          </dd>
+
+          <dt>Bluesky's public services</dt>
+          <dd>
+            To analyse an account, your browser asks Bluesky's public API
+            (<code>public.api.bsky.app</code>), the identity directory
+            (<code>plc.directory</code>) and the account's data server (for
+            accounts hosted by Bluesky, a <code>*.host.bsky.network</code>
+            server) for public data: profile, posts, reposts, follows and block
+            records. These services see your IP address and which accounts you
+            look up, as they would with any Bluesky app. No login is involved.
+          </dd>
+
+          <dt>OpenRouter, only for content tags</dt>
+          <dd>
+            Content tags are optional and only run when you click
+            <em>Classify</em>. Your browser then sends the text of the analysed
+            account's own posts (and of the posts they quote) to OpenRouter with
+            your API key, one request per post. OpenRouter passes them to the
+            model's provider (for example Cloudflare for Clef Flash). Their
+            policies apply:
+            <a href="https://openrouter.ai/privacy">OpenRouter privacy</a>. The
+            key is sent only to <code>openrouter.ai</code>. Logging in with
+            OpenRouter happens on <code>openrouter.ai</code>, which hands the
+            page a key; Skydex never sees your OpenRouter password.
+          </dd>
+
+          <dt>Bluesky login, only to unfollow</dt>
+          <dd>
+            Unfollowing from the follows scan needs you to log in to Bluesky in
+            a popup run by your account's own login server (for most accounts,
+            <code>bsky.social</code>). Skydex asks only for permission to delete
+            follow records: it cannot post, follow, like, read private data or
+            change your profile. Your password goes to that login server only.
+            While logging in, the login server fetches Skydex's public
+            description (<code>client-metadata.json</code>) from this site.
+          </dd>
+        </dl>
+      </section>
+
+      <section class="card prose">
+        <h2>What stays in your browser</h2>
+        <dl>
+          <dt>Cache (IndexedDB)</dt>
+          <dd>
+            Public histories of the last 20 accounts downloaded, and for the
+            follows scan, the type and time of each followed account's latest
+            activities. This makes revisits fast. Clear it from
+            <a href="../?settings">Settings</a>.
+          </dd>
+          <dt>Local storage</dt>
+          <dd>
+            Your settings, the account you last scanned, content tags already
+            computed (so you never pay twice for the same post), and your
+            OpenRouter key only if you ticked <em>Remember the key</em>.
+          </dd>
+          <dt>Session storage (cleared when the tab closes)</dt>
+          <dd>
+            Your OpenRouter key by default, and the state of an OpenRouter login
+            in progress.
+          </dd>
+          <dt>Page memory only</dt>
+          <dd>
+            The Bluesky login. It is never saved: closing or reloading the tab
+            ends it, and <em>Log out</em> also revokes it on Bluesky's side.
+          </dd>
+        </dl>
+        <p>
+          Anything running in the page could read these, so Skydex only runs its
+          own code (enforced by a Content-Security-Policy) and cannot be
+          embedded by other sites. Give your OpenRouter key a small credit
+          limit.
+        </p>
+      </section>
+
+      <section class="card prose">
+        <h2>Source</h2>
+        <p>
+          Skydex is free software (AGPL-3.0-or-later). You can read exactly what
+          it does, or run your own copy, from
+          <a href="https://github.com/aavanian/skydex">its source code</a>.
+        </p>
+      </section>
+    </main>
+    <script type="module" src="/src/page.ts"></script>
+  </body>
+</html>

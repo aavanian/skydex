@@ -86,7 +86,12 @@ export default defineConfig({
   preview: { host: "127.0.0.1" },
   build: {
     rollupOptions: {
-      input: { main: "index.html", callback: "callback/index.html" },
+      input: {
+        main: "index.html",
+        callback: "callback/index.html",
+        privacy: "privacy/index.html",
+        guide: "guide/index.html",
+      },
     },
   },
   test: {

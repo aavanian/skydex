@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Skydex: guide</title>
+    <meta
+      name="description"
+      content="How to use Skydex and read its numbers."
+    />
+  </head>
+  <body>
+    <main class="page">
+      <h1>
+        <a href="../" class="home">Skydex</a>
+        <span class="tagline">Guide</span>
+      </h1>
+      <nav class="modes">
+        <a href="../">Account profile</a>
+        <a href="../?follows=">Follows scan</a>
+        <a href="../?settings">Settings</a>
+      </nav>
+
+      <section class="card prose">
+        <h2>What Skydex is for</h2>
+        <p>
+          Deciding whom to follow, unfollow or mute on Bluesky, with some data:
+          how an account posts, whether it is still active, and what it talks
+          about. It is not a tool for building block lists.
+        </p>
+        <p>
+          Open it from any profile with the bookmarklet: drag
+          <a class="bookmarklet" href="../">Skydex</a> to your bookmarks bar,
+          then click it while viewing a profile or post in bsky.app or any web
+          client with <code>/profile/</code> links.
+        </p>
+      </section>
+
+      <section class="card prose">
+        <h2>Account profile</h2>
+        <p>
+          Enter a handle, a DID or a profile link. Skydex reads the account's
+          whole public history.
+        </p>
+        <dl>
+          <dt>Kinds of activity</dt>
+          <dd>
+            <strong>Organic</strong>: the account's own posts.
+            <strong>Quote</strong>: posts quoting another post.
+            <strong>Reply</strong>: replies in a conversation; continuing one's
+            own thread counts as posting, not replying. <strong>Repost</strong>:
+            sharing someone else's post as is.
+          </dd>
+          <dt>Recency and rate</dt>
+          <dd>
+            Last activity, last organic post, and posts per week over the last
+            90 days next to the lifetime average.
+          </dd>
+          <dt>Activity mix per month, and every post over time</dt>
+          <dd>
+            Both run up to today, so the silence after an account's last post
+            shows as a gap.
+          </dd>
+          <dt>What they talk about</dt>
+          <dd>
+            Most used words, hashtags, mentions and linked sites over the
+            analysis window, split between <em>own</em> (organic posts and quote
+            commentary) and <em>shared</em> (posts reposted or quoted). Common
+            words are left out. An account's own domains among linked sites
+            often signal self-promotion.
+          </dd>
+          <dt>Content tags (experimental)</dt>
+          <dd>
+            With an OpenRouter key, a decision model rates the account's recent
+            organic and quote posts: promotional, snark, political, and
+            political snark (both political and snarky). The clearest examples
+            are listed so you can judge the model. Treat the numbers as hints.
+          </dd>
+        </dl>
+      </section>
+
+      <section class="card prose">
+        <h2>Follows scan</h2>
+        <p>
+          Lists everyone an account follows, read from its own follow records,
+          so it includes accounts Bluesky's app hides. Each account's latest 100
+          posts, replies and reposts give its numbers.
+        </p>
+        <dl>
+          <dt>Statuses</dt>
+          <dd>
+            <strong>Dormant</strong>: nothing in 90 days.
+            <strong>No own posts lately</strong>: only reposts or replies in 90
+            days. <strong>Deactivated, Deleted, Suspended</strong>: shown with
+            the last known handle. <strong>Blocks you</strong>: their follow is
+            hidden from you by their block. <strong>Hidden by a block</strong>:
+            hidden by a block but no direct block found, likely a block list.
+          </dd>
+          <dt>Unfollowing</dt>
+          <dd>
+            Log in to Bluesky from the scan to get an Unfollow button on each
+            row, with a confirmation. It also works for accounts that block you.
+            The login lasts until the tab closes or reloads.
+          </dd>
+          <dt>Freshness</dt>
+          <dd>
+            Results are reused from your browser's cache for 24 hours by
+            default;
+            <em>Rescan</em> fetches everything again.
+          </dd>
+        </dl>
+      </section>
+
+      <section class="card prose">
+        <h2>Limits</h2>
+        <ul>
+          <li>
+            Dates are those the posting app wrote; imported or back-dated posts
+            can stretch a history.
+          </li>
+          <li>
+            In the follows scan, repost dates are when Bluesky saw them, and a
+            very active account's rate is shown as a minimum (for example
+            <em>7.7+</em>) when its latest 100 items all fall within 90 days.
+          </li>
+          <li>
+            Only Bluesky's kinds of records are analysed. Accounts using other
+            atproto apps only show as never posting.
+          </li>
+        </ul>
+        <p>
+          Settings for the analysis window, number of posts, model and cache
+          duration are under <a href="../?settings">Settings</a>. See also
+          <a href="../privacy/">privacy and data flow</a>.
+        </p>
+      </section>
+    </main>
+    <script type="module" src="/src/page.ts"></script>
+  </body>
+</html>

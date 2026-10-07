@@ -5,15 +5,13 @@ import { cachedRepo } from "./cached";
 import { resolveAccount } from "./repo";
 import { loadSettings } from "./settings";
 import { h } from "./ui/dom";
+import { siteFooter } from "./ui/footer";
 import { finishLogin } from "./ui/key";
 import { renderFollows } from "./ui/follows";
 import { introCard } from "./ui/intro";
 import { renderProfile } from "./ui/profile";
 import { settingsPage } from "./ui/settings";
 import { pageStore } from "./ui/store";
-
-/** Where the source is published, as the AGPL requires for network use. */
-const SOURCE_URL = "https://github.com/aavanian/skydex";
 
 const app = document.querySelector<HTMLElement>("#app");
 if (!app) throw new Error("Missing #app element");
@@ -99,19 +97,7 @@ const nav = h(
 const status = h("p", { className: "status" });
 const results = h("div");
 
-const footer = h(
-  "footer",
-  { className: "footnote" },
-  "Skydex is free software under the ",
-  h(
-    "a",
-    { href: "https://www.gnu.org/licenses/agpl-3.0.html", rel: "noopener" },
-    "AGPL-3.0-or-later",
-  ),
-  ". ",
-  h("a", { href: SOURCE_URL, rel: "noopener" }, "Source code"),
-  ".",
-);
+const footer = siteFooter();
 
 app.replaceChildren(
   h(
