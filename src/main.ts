@@ -3,11 +3,13 @@ import { activitiesFromCar } from "./activities";
 import { actorFromInput } from "./actor-input";
 import { cachedRepo } from "./cached";
 import { resolveAccount } from "./repo";
+import { loadSettings } from "./settings";
 import { h } from "./ui/dom";
 import { finishLogin } from "./ui/key";
 import { renderFollows } from "./ui/follows";
 import { introCard } from "./ui/intro";
 import { renderProfile } from "./ui/profile";
+import { settingsPage } from "./ui/settings";
 import { pageStore } from "./ui/store";
 
 /** Where the source is published, as the AGPL requires for network use. */
@@ -16,11 +18,26 @@ const SOURCE_URL = "https://github.com/aavanian/skydex";
 const app = document.querySelector<HTMLElement>("#app");
 if (!app) throw new Error("Missing #app element");
 
-/** Profile of one account, or a scan of everyone an account follows. */
-type Mode = "actor" | "follows";
+/**
+ * Profile of one account, a scan of everyone an account follows, or
+ * the settings.
+ */
+type Mode = "actor" | "follows" | "settings";
 const params = new URLSearchParams(location.search);
-const mode: Mode = params.has("follows") ? "follows" : "actor";
+const mode: Mode = params.has("follows")
+  ? "follows"
+  : params.has("settings")
+    ? "settings"
+    : "actor";
 const FOLLOWS_ACTOR = "follows-actor";
+
+function browserStorage(): Storage | undefined {
+  try {
+    return localStorage;
+  } catch {
+    return undefined;
+  }
+}
 
 function remembered(): string {
   try {
@@ -70,6 +87,14 @@ const nav = h(
     },
     "Follows scan",
   ),
+  h(
+    "a",
+    {
+      href: "?settings",
+      attrs: mode === "settings" ? { "aria-current": "page" } : {},
+    },
+    "Settings",
+  ),
 );
 const status = h("p", { className: "status" });
 const results = h("div");
@@ -96,7 +121,7 @@ app.replaceChildren(
     h("span", { className: "tagline" }, "Bluesky account profiles"),
   ),
   nav,
-  form,
+  ...(mode === "settings" ? [] : [form]),
   status,
   results,
   footer,
@@ -124,7 +149,7 @@ async function analyze(actor: string) {
         ? `History from this browser's cache, downloaded ${new Date(savedAt).toLocaleString()}; no newer activity found.`
         : "",
     );
-    renderProfile(results, account, activities);
+    renderProfile(results, account, activities, loadSettings(browserStorage()));
   } catch (error) {
     setStatus(error instanceof Error ? error.message : String(error), true);
   }
@@ -142,7 +167,13 @@ function analyzeFromInput(text: string) {
   history.replaceState(null, "", url);
   if (mode === "follows") {
     remember(actor);
-    renderFollows(results, actor, setStatus).catch((error: unknown) =>
+    const { scanCacheHours } = loadSettings(browserStorage());
+    renderFollows(
+      results,
+      actor,
+      setStatus,
+      scanCacheHours * 60 * 60 * 1000,
+    ).catch((error: unknown) =>
       setStatus(error instanceof Error ? error.message : String(error), true),
     );
   } else {
@@ -159,7 +190,9 @@ const initial = params.get(mode) || (mode === "follows" ? remembered() : "");
 if (mode === "follows") input.placeholder = "Your handle, DID or profile URL";
 finishLogin().then(
   () => {
-    if (initial) analyzeFromInput(initial);
+    if (mode === "settings") {
+      results.replaceChildren(settingsPage(loadSettings(browserStorage())));
+    } else if (initial) analyzeFromInput(initial);
     else if (mode === "actor") results.replaceChildren(introCard());
   },
   (error: unknown) => {

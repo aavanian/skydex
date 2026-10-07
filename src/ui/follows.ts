@@ -15,8 +15,6 @@ import { h } from "./dom";
 import { pageStore } from "./store";
 
 const CONCURRENCY = 6;
-/** How long a follow's recent activity is reused before being fetched again. */
-const DEFAULT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 type DisplayStatus =
   | FollowStatus
@@ -223,7 +221,7 @@ export async function renderFollows(
   root: HTMLElement,
   actor: string,
   setStatus: (text: string, isError?: boolean) => void,
-  maxAgeMs = DEFAULT_MAX_AGE_MS,
+  maxAgeMs: number,
 ): Promise<void> {
   root.replaceChildren();
   setStatus(

@@ -13,7 +13,7 @@ import { cssVar, h } from "./dom";
 import { termsCard } from "./terms";
 import { contentCard } from "./content";
 import { fetchPosts, sharedUris } from "../shared";
-import { DEFAULT_SETTINGS, windowStart } from "../settings";
+import { windowStart, type Settings } from "../settings";
 
 const TYPE_LABELS: Record<ActivityType, string> = {
   organic: "Organic",
@@ -295,13 +295,14 @@ export function renderProfile(
   root: HTMLElement,
   account: Account,
   activities: Activity[],
+  settings: Settings,
   now = new Date(),
 ): void {
   const summary = summarize(activities, now);
   const uris = sharedUris(
     activities,
-    windowStart(DEFAULT_SETTINGS, now),
-    DEFAULT_SETTINGS.maxShared,
+    windowStart(settings, now),
+    settings.maxPosts,
   );
   const shared = fetchPosts(uris).then((posts) => ({
     requested: uris.length,
@@ -313,12 +314,13 @@ export function renderProfile(
       ? [
           mixCard(activities, now),
           timelineCard(activities, now),
-          termsCard(activities, shared, now),
+          termsCard(activities, shared, now, settings),
           contentCard(
             account,
             activities,
             shared.then((s) => s.posts).catch(() => new Map()),
             now,
+            settings,
           ),
         ]
       : []),

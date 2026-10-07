@@ -161,11 +161,17 @@ link domains, with TF-IDF against a baseline; LLM topics optional.
 
 ## Settings
 
-Stored per browser, with these defaults:
+A Settings page (`?settings`), stored in this browser's localStorage
+(`skydex-settings`); invalid values fall back to the defaults:
 
-- Hydration / classifier window: last 12 months.
-- Max posts hydrated / sent to the classifier: 500.
-- Follows scan account: your own handle, remembered after first use.
+- Analysis window (topics and content tags): 12 months.
+- Posts per analysis (shared posts fetched, posts classified): 500.
+- Content tags model: `cloudflare/clef-flash`.
+- Follows scan cache: 24 hours (0 always refetches).
+- Follows scan account: the last one scanned, remembered separately.
+
+The page also clears cached data: IndexedDB (histories, scan data)
+and saved classifier answers.
 
 ## Testing
 

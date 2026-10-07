@@ -51,4 +51,23 @@ describe("AnswerCache", () => {
 
     expect(new AnswerCache(storage, "v1").load("did:plc:me").size).toBe(0);
   });
+
+  test("clearAll forgets every account's answers and nothing else", () => {
+    const storage = memoryStorage();
+    new AnswerCache(storage, "v1").save(
+      "did:plc:a",
+      new Map([["x", { s: 1 }]]),
+    );
+    new AnswerCache(storage, "v2").save(
+      "did:plc:b",
+      new Map([["y", { s: 1 }]]),
+    );
+    storage.setItem("skydex-settings", "{}");
+
+    AnswerCache.clearAll(storage);
+
+    expect(new AnswerCache(storage, "v1").load("did:plc:a").size).toBe(0);
+    expect(new AnswerCache(storage, "v2").load("did:plc:b").size).toBe(0);
+    expect(storage.getItem("skydex-settings")).toBe("{}");
+  });
 });

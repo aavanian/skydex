@@ -1,5 +1,5 @@
 import type { Activity } from "../activities";
-import { DEFAULT_SETTINGS, windowStart, type Settings } from "../settings";
+import { windowStart, type Settings } from "../settings";
 import { fetchHandles } from "../shared";
 import { termsOf, topTerms, type TermCount, type TopTerms } from "../terms";
 import { h } from "./dom";
@@ -94,7 +94,7 @@ export function termsCard(
   activities: Activity[],
   sharedPosts: Promise<{ requested: number; posts: Map<string, object> }>,
   now: Date,
-  settings: Settings = DEFAULT_SETTINGS,
+  settings: Settings,
 ): HTMLElement {
   const since = windowStart(settings, now);
   const body = h(
@@ -141,8 +141,8 @@ export function termsCard(
             (missing
               ? ` (${integer.format(missing)} deleted or unavailable)`
               : "") +
-            (requested >= settings.maxShared
-              ? `, capped at the latest ${integer.format(settings.maxShared)}`
+            (requested >= settings.maxPosts
+              ? `, capped at the latest ${integer.format(settings.maxPosts)}`
               : ""),
           sharedTop,
           handles,

@@ -3,14 +3,14 @@ import { AnswerCache } from "../classify/cache";
 import { contentItems, tagSummary } from "../classify/content";
 import { datasetLines } from "../classify/dataset";
 import { withDerivedTags } from "../classify/derived";
-import { decide, DEFAULT_DECISION_MODEL } from "../classify/decisions";
+import { decide } from "../classify/decisions";
 import {
   CONTENT_QUESTIONS,
   questionsVersion,
   TAG_LABELS,
 } from "../classify/questions";
 import type { Account } from "../repo";
-import { DEFAULT_SETTINGS, windowStart, type Settings } from "../settings";
+import { windowStart, type Settings } from "../settings";
 import { postUrl } from "../links";
 import { h } from "./dom";
 import { keyStore, startLogin } from "./key";
@@ -104,9 +104,9 @@ export function contentCard(
   activities: Activity[],
   sharedPosts: Promise<Map<string, object>>,
   now: Date,
-  settings: Settings = DEFAULT_SETTINGS,
+  settings: Settings,
 ): HTMLElement {
-  const version = questionsVersion(CONTENT_QUESTIONS, DEFAULT_DECISION_MODEL);
+  const version = questionsVersion(CONTENT_QUESTIONS, settings.model);
   const cache = new AnswerCache(browserStorage(), version);
   const since = windowStart(settings, now);
   const body = h("div");
@@ -129,7 +129,7 @@ export function contentCard(
     h(
       "p",
       { className: "subtitle" },
-      `Organic and quote posts from the last ${settings.windowMonths} months, up to ${integer.format(settings.maxShared)}, classified by the ${DEFAULT_DECISION_MODEL} decision model on OpenRouter. A post counts when the model gives it ${percent.format(THRESHOLD)} or more.`,
+      `Organic and quote posts from the last ${settings.windowMonths} months, up to ${integer.format(settings.maxPosts)}, classified by the ${settings.model} decision model on OpenRouter. A post counts when the model gives it ${percent.format(THRESHOLD)} or more.`,
     ),
     body,
   );
@@ -191,7 +191,7 @@ export function contentCard(
       activities,
       await sharedPosts,
       since,
-      settings.maxShared,
+      settings.maxPosts,
     );
     const texts = new Map(
       items.map((i) => [i.id, (i.state as { post: string }).post]),
@@ -230,7 +230,7 @@ export function contentCard(
         items,
         new Map(activities.map((a) => [a.uri, a])),
         withDerivedTags(known),
-        { model: DEFAULT_DECISION_MODEL, questionsVersion: version },
+        { model: settings.model, questionsVersion: version },
       );
       const link = h("a", {
         href: URL.createObjectURL(
@@ -258,6 +258,7 @@ export function contentCard(
       try {
         const result = await decide(pending, CONTENT_QUESTIONS, {
           apiKey: key,
+          model: settings.model,
           onProgress: (done, total) => {
             status.textContent = `Classified ${integer.format(done)} of ${integer.format(total)}…`;
           },
