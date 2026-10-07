@@ -311,3 +311,14 @@ ul.examples a {
 .terms-column .ranked-grid {
   margin-bottom: 16px;
 }
+.badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  vertical-align: 1px;
+}

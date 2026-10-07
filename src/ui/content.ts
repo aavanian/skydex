@@ -113,7 +113,19 @@ export function contentCard(
   const card = h(
     "section",
     { className: "card" },
-    h("h2", {}, "Content tags"),
+    h(
+      "h2",
+      {},
+      "Content tags ",
+      h(
+        "span",
+        {
+          className: "badge",
+          title: "Model answers are not yet benchmarked; read them as hints.",
+        },
+        "Experimental",
+      ),
+    ),
     h(
       "p",
       { className: "subtitle" },
