@@ -1,4 +1,6 @@
-export type ActivityType = "organic" | "quote" | "reply" | "repost";
+export const ACTIVITY_TYPES = ["organic", "quote", "reply", "repost"] as const;
+
+export type ActivityType = (typeof ACTIVITY_TYPES)[number];
 
 const QUOTE_EMBEDS = new Set([
   "app.bsky.embed.record",
