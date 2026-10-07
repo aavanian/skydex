@@ -68,6 +68,10 @@ function hostingFiles(): Plugin {
           `  Content-Security-Policy: ${[...CONTENT_SECURITY_POLICY, "frame-ancestors 'none'"].join("; ")}`,
           "  X-Content-Type-Options: nosniff",
           "  Referrer-Policy: strict-origin-when-cross-origin",
+          // Bundled files are named after a hash of their content, so a
+          // changed file always gets a new name and may be kept forever.
+          "/assets/*",
+          "  Cache-Control: public, max-age=31536000, immutable",
           "",
         ].join("\n"),
       });
