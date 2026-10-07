@@ -43,7 +43,7 @@ function contentSecurityPolicy(): Plugin {
 
 /**
  * Files the static host needs next to the pages: the OAuth client
- * metadata Bluesky fetches to identify the app, and Cloudflare Pages
+ * metadata Bluesky fetches to identify the app, and Cloudflare
  * response headers. As a header the policy can also forbid framing,
  * which a meta tag cannot, so no other site can overlay the Unfollow
  * buttons.

@@ -111,8 +111,8 @@ Optional atproto OAuth login, requested scope
   Hosted, `client-metadata.json` is emitted by the build from
   `clientMetadataFor` for `SKYDEX_PUBLIC_URL`, so the file and the
   runtime client always agree. The redirect URI is the folder
-  `callback/`, since Cloudflare Pages redirects `*.html` addresses to
-  extensionless ones.
+  `callback/`, since Cloudflare (Workers static assets, like Pages)
+  redirects `*.html` addresses to extensionless ones.
 
 ## Classification
 

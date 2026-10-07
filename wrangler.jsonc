@@ -1,0 +1,9 @@
+// Cloudflare Worker serving the built static site; there is no Worker code.
+// `_headers` in the build output sets the security headers.
+{
+  "name": "skydex",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist",
+  },
+}

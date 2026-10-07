@@ -71,14 +71,15 @@ both holding).
 
 Skydex is a static site; any static host on an origin of its own
 works (pages sharing an origin can read each other's browser storage).
-It runs at <https://skydex.avanian.net> on Cloudflare Pages:
+It runs at <https://skydex.avanian.net> as a Cloudflare Worker serving
+static assets (`wrangler.jsonc`), built from this repository:
 
-- Build command `pnpm build`, output directory `dist`.
+- Build command `pnpm build`, deploy command `npx wrangler deploy`.
 - `SKYDEX_PUBLIC_URL` (default `https://skydex.avanian.net/`) is the
   address the build writes into `client-metadata.json`, which Bluesky
   fetches to identify the app for the unfollow login. Login only works
   on that address.
-- The build also writes Cloudflare's `_headers`, carrying the
+- The build also writes `_headers`, carrying the
   Content-Security-Policy with `frame-ancestors 'none'`.
 
 ## License
