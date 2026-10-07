@@ -11,6 +11,7 @@ import {
 import { ACTIVITY_TYPES, type ActivityType } from "../taxonomy";
 import { cssVar, h } from "./dom";
 import { termsCard } from "./terms";
+import { onThemeChange } from "./theme";
 import { contentCard } from "./content";
 import { fetchPosts, sharedUris } from "../shared";
 import { windowStart, type Settings } from "../settings";
@@ -138,7 +139,11 @@ function summaryCard(
   );
 }
 
-function mixCard(activities: Activity[], now: Date): HTMLElement {
+function mixCard(
+  activities: Activity[],
+  now: Date,
+  signal: AbortSignal,
+): HTMLElement {
   const months = monthlyMix(activities, now);
   const rows = months.flatMap((m) =>
     ACTIVITY_TYPES.map((t) => ({
@@ -152,7 +157,9 @@ function mixCard(activities: Activity[], now: Date): HTMLElement {
   const countsButton = h("button", { type: "button" }, "Counts");
   const shareButton = h("button", { type: "button" }, "Share");
 
+  let shown: "counts" | "share" = "counts";
   function render(mode: "counts" | "share") {
+    shown = mode;
     countsButton.setAttribute("aria-pressed", String(mode === "counts"));
     shareButton.setAttribute("aria-pressed", String(mode === "share"));
     chart.replaceChildren(
@@ -188,6 +195,7 @@ function mixCard(activities: Activity[], now: Date): HTMLElement {
   countsButton.addEventListener("click", () => render("counts"));
   shareButton.addEventListener("click", () => render("share"));
   queueMicrotask(() => render("counts"));
+  onThemeChange(() => render(shown), signal);
 
   const table = h(
     "table",
@@ -247,9 +255,13 @@ function mixCard(activities: Activity[], now: Date): HTMLElement {
   );
 }
 
-function timelineCard(activities: Activity[], now: Date): HTMLElement {
+function timelineCard(
+  activities: Activity[],
+  now: Date,
+  signal: AbortSignal,
+): HTMLElement {
   const chart = h("div", { className: "chart" });
-  queueMicrotask(() =>
+  const draw = () =>
     chart.replaceChildren(
       Plot.plot({
         width: chart.clientWidth || 960,
@@ -275,8 +287,9 @@ function timelineCard(activities: Activity[], now: Date): HTMLElement {
           }),
         ],
       }),
-    ),
-  );
+    );
+  queueMicrotask(draw);
+  onThemeChange(draw, signal);
   return h(
     "section",
     { className: "card" },
@@ -290,6 +303,9 @@ function timelineCard(activities: Activity[], now: Date): HTMLElement {
   );
 }
 
+/** Stops the previous profile's charts from following theme changes. */
+let previousProfile: AbortController | undefined;
+
 /** Renders the single-account profile into `root`. */
 export function renderProfile(
   root: HTMLElement,
@@ -298,6 +314,9 @@ export function renderProfile(
   settings: Settings,
   now = new Date(),
 ): void {
+  previousProfile?.abort();
+  previousProfile = new AbortController();
+  const { signal } = previousProfile;
   const summary = summarize(activities, now);
   const uris = sharedUris(
     activities,
@@ -312,8 +331,8 @@ export function renderProfile(
     summaryCard(account, summary, now),
     ...(activities.length
       ? [
-          mixCard(activities, now),
-          timelineCard(activities, now),
+          mixCard(activities, now, signal),
+          timelineCard(activities, now, signal),
           termsCard(activities, shared, now, settings),
           contentCard(
             account,
