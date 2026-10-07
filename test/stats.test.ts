@@ -129,4 +129,13 @@ describe("monthlyMix", () => {
       repost: 0,
     });
   });
+
+  test("extends to a given month so recent dormancy shows", () => {
+    const mix = monthlyMix(
+      [activity("organic", "2024-11-05T00:00:00.000Z")],
+      new Date("2025-01-20T00:00:00.000Z"),
+    );
+
+    expect(mix.map((m) => m.month)).toEqual(["2024-11", "2024-12", "2025-01"]);
+  });
 });

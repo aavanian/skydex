@@ -1,0 +1,228 @@
+:root {
+  color-scheme: light;
+  --page: #f9f9f7;
+  --surface: #fcfcfb;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #898781;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --border: rgba(11, 11, 11, 0.1);
+  --accent: #2a78d6;
+  --critical: #d03b3b;
+  --organic: #2a78d6;
+  --quote: #eb6834;
+  --reply: #1baf7a;
+  --repost: #eda100;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --border: rgba(255, 255, 255, 0.1);
+    --accent: #3987e5;
+    --organic: #3987e5;
+    --quote: #d95926;
+    --reply: #199e70;
+    --repost: #c98500;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d;
+  --surface: #1a1a19;
+  --text-primary: #ffffff;
+  --text-secondary: #c3c2b7;
+  --text-muted: #898781;
+  --grid: #2c2c2a;
+  --axis: #383835;
+  --border: rgba(255, 255, 255, 0.1);
+  --accent: #3987e5;
+  --organic: #3987e5;
+  --quote: #d95926;
+  --reply: #199e70;
+  --repost: #c98500;
+}
+
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--text-primary);
+  font:
+    15px/1.45 system-ui,
+    -apple-system,
+    "Segoe UI",
+    sans-serif;
+}
+main {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 24px 16px 64px;
+}
+h1 {
+  font-size: 20px;
+  margin: 0 0 16px;
+}
+h2 {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 4px;
+}
+.subtitle {
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin: 0 0 12px;
+}
+form.lookup {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+form.lookup input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  font: inherit;
+  color: inherit;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+button {
+  padding: 8px 14px;
+  font: inherit;
+  color: #fff;
+  background: var(--accent);
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+button.secondary {
+  color: var(--text-primary);
+  background: transparent;
+  border: 1px solid var(--border);
+}
+.status {
+  color: var(--text-secondary);
+}
+.status.error {
+  color: var(--critical);
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.account-name {
+  font-size: 18px;
+  font-weight: 600;
+}
+.account-name a {
+  color: inherit;
+}
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+.tile-label {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+.tile-value {
+  font-size: 22px;
+  font-weight: 600;
+}
+.tile-note {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 4px 0 8px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+.legend span::before {
+  content: "";
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  margin-right: 6px;
+  background: var(--swatch);
+  vertical-align: -1px;
+}
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 8px;
+}
+.toggle button {
+  padding: 4px 10px;
+  font-size: 13px;
+}
+.toggle button[aria-pressed="false"] {
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border);
+}
+.chart {
+  width: 100%;
+  overflow: hidden;
+}
+.chart svg {
+  max-width: 100%;
+  height: auto;
+  font:
+    12px system-ui,
+    -apple-system,
+    "Segoe UI",
+    sans-serif;
+}
+details {
+  margin-top: 8px;
+  font-size: 13px;
+}
+details summary {
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+.table-scroll {
+  overflow-x: auto;
+  max-height: 320px;
+}
+table {
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+  width: 100%;
+}
+th,
+td {
+  text-align: right;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--grid);
+}
+th:first-child,
+td:first-child {
+  text-align: left;
+}
+.footnote {
+  color: var(--text-muted);
+  font-size: 12px;
+}

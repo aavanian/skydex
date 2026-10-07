@@ -70,12 +70,12 @@ function monthKey(year: number, month: number): string {
 }
 
 /**
- * Activity counts per type for every month from the first to the last
- * activity, including months without any.
+ * Activity counts per type for every month from the first activity to
+ * `until` (default: the last activity), including months without any.
  */
-export function monthlyMix(activities: Activity[]): MonthMix[] {
+export function monthlyMix(activities: Activity[], until?: Date): MonthMix[] {
   const first = activities[0]?.createdAt;
-  const last = activities.at(-1)?.createdAt;
+  const last = until ?? activities.at(-1)?.createdAt;
   if (!first || !last) return [];
 
   const byMonth = new Map<string, MonthMix>();
