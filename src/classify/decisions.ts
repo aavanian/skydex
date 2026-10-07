@@ -36,6 +36,8 @@ export interface DecisionResult {
   /** Total cost in USD as reported by OpenRouter. */
   cost: number;
   failed: number;
+  /** Explanation of the most recent failure, if any item failed. */
+  lastError?: string;
 }
 
 interface DecisionResponse {
@@ -46,6 +48,20 @@ interface DecisionResponse {
 const MAX_ATTEMPTS = 4;
 
 class FatalError extends Error {}
+
+/** Status plus OpenRouter's own explanation, e.g. "403: Forbidden model". */
+async function errorDetail(response: Response): Promise<string> {
+  const body = (await response.text()).trim();
+  let message = body;
+  try {
+    message =
+      (JSON.parse(body) as { error?: { message?: string } }).error?.message ??
+      body;
+  } catch {
+    // Not JSON: keep the raw body.
+  }
+  return message ? `${response.status}: ${message}` : String(response.status);
+}
 
 function isRetryable(status: number): boolean {
   return status === 429 || status >= 500;
@@ -71,16 +87,23 @@ async function ask(
       }),
     });
     if (response.ok) return (await response.json()) as DecisionResponse;
-    if (response.status === 401 || response.status === 403) {
+    if (response.status === 401) {
       throw new FatalError(
-        `OpenRouter rejected the API key (${response.status})`,
+        `OpenRouter did not recognise the API key (${await errorDetail(response)})`,
+      );
+    }
+    if (response.status === 403) {
+      throw new FatalError(
+        `OpenRouter refused the request (${await errorDetail(response)})`,
       );
     }
     if (response.status === 402) {
-      throw new FatalError("OpenRouter account is out of credits (402)");
+      throw new FatalError(
+        `OpenRouter account is out of credits (${await errorDetail(response)})`,
+      );
     }
     if (!isRetryable(response.status) || attempt >= MAX_ATTEMPTS) {
-      throw new Error(`${response.status} from OpenRouter`);
+      throw new Error(`OpenRouter error (${await errorDetail(response)})`);
     }
     await new Promise((resolve) =>
       setTimeout(resolve, (options.retryDelayMs ?? 1000) * attempt),
@@ -117,6 +140,8 @@ export async function decide(
       } catch (error) {
         if (error instanceof FatalError) throw error;
         result.failed++;
+        result.lastError =
+          error instanceof Error ? error.message : String(error);
       }
       options.onProgress?.(++done, items.length);
     }

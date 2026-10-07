@@ -102,16 +102,47 @@ describe("decide", () => {
     const result = await decide(items, questions, { ...options, fetchFn });
 
     expect(result.failed).toBe(1);
+    expect(result.lastError).toBe("OpenRouter error (400: bad)");
     expect([...result.answers.keys()]).toEqual(["a"]);
   });
 
-  test("stops with a clear error when the key is rejected", async () => {
+  test("stops with OpenRouter's explanation when the key is unknown", async () => {
     const fetchFn: typeof fetch = async () =>
-      new Response("no", { status: 401 });
+      Response.json(
+        { error: { message: "User not found.", code: 401 } },
+        { status: 401 },
+      );
 
     await expect(
       decide(items, questions, { ...options, fetchFn }),
-    ).rejects.toThrow("OpenRouter rejected the API key (401)");
+    ).rejects.toThrow(
+      "OpenRouter did not recognise the API key (401: User not found.)",
+    );
+  });
+
+  test("stops with OpenRouter's explanation when the request is forbidden", async () => {
+    const fetchFn: typeof fetch = async () =>
+      Response.json(
+        { error: { message: "Model not allowed for this key", code: 403 } },
+        { status: 403 },
+      );
+
+    await expect(
+      decide(items, questions, { ...options, fetchFn }),
+    ).rejects.toThrow(
+      "OpenRouter refused the request (403: Model not allowed for this key)",
+    );
+  });
+
+  test("falls back to the raw body when the error is not JSON", async () => {
+    const fetchFn: typeof fetch = async () =>
+      new Response("forbidden by proxy", { status: 403 });
+
+    await expect(
+      decide(items, questions, { ...options, fetchFn }),
+    ).rejects.toThrow(
+      "OpenRouter refused the request (403: forbidden by proxy)",
+    );
   });
 
   test("reports progress after each item", async () => {

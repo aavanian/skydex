@@ -238,7 +238,7 @@ export function contentCard(
         status.textContent =
           `Done for ${usd.format(result.cost)}.` +
           (result.failed
-            ? ` ${integer.format(result.failed)} posts failed; run again to retry them.`
+            ? ` ${integer.format(result.failed)} posts failed (${result.lastError}); run again to retry them.`
             : "");
         run.remove();
         output.replaceChildren(results(known, texts));
