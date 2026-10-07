@@ -1,6 +1,6 @@
+import { cachedRecentActivity } from "../cached";
 import {
   fetchFollowing,
-  fetchRecentActivity,
   followStatus,
   followSummary,
   type Follow,
@@ -12,8 +12,11 @@ import { deleteFollow } from "../auth/unfollow";
 import { runPool } from "../pool";
 import { RECENT_DAYS } from "../stats";
 import { h } from "./dom";
+import { pageStore } from "./store";
 
 const CONCURRENCY = 6;
+/** How long a follow's recent activity is reused before being fetched again. */
+const DEFAULT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 type DisplayStatus =
   | FollowStatus
@@ -81,6 +84,15 @@ function sortValue(row: Row, key: SortKey): number | string {
     case "status":
       return row.status ? STATUS_ORDER.indexOf(row.status) : -1;
   }
+}
+
+/** Rough age of a duration in milliseconds, e.g. "3 hours ago". */
+function ago(ms: number): string {
+  const minutes = Math.round(ms / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.round(minutes / 60);
+  return hours === 1 ? "1 hour ago" : `${hours} hours ago`;
 }
 
 function dateCell(date: Date | undefined): string {
@@ -204,12 +216,14 @@ function fillRow(row: Row): void {
 /**
  * Renders a table of every account `actor` follows with how recently
  * and how much each posts, to spot accounts that went quiet. Each
- * follow costs one request for its latest 100 activities.
+ * follow costs one request for its latest 100 activities, unless this
+ * browser fetched it less than `maxAgeMs` ago.
  */
 export async function renderFollows(
   root: HTMLElement,
   actor: string,
   setStatus: (text: string, isError?: boolean) => void,
+  maxAgeMs = DEFAULT_MAX_AGE_MS,
 ): Promise<void> {
   root.replaceChildren();
   setStatus(
@@ -345,6 +359,7 @@ export async function renderFollows(
   sort();
 
   const counts = h("p", { className: "subtitle" });
+  const freshness = h("p", { className: "footnote" });
   function updateCounts() {
     const following = rows.filter((r) => !r.unfollowed);
     const count = (...statuses: DisplayStatus[]) =>
@@ -444,6 +459,7 @@ export async function renderFollows(
       { className: "card" },
       h("h2", {}, `Who @${subject.handle} follows`),
       counts,
+      freshness,
       login,
       h(
         "p",
@@ -455,13 +471,23 @@ export async function renderFollows(
   );
 
   const active = rows.filter((r) => !r.follow.unavailable);
+  const store = await pageStore();
   let done = 0;
+  let fromCache = 0;
+  let oldest = now.getTime();
   await runPool(active, CONCURRENCY, async (row) => {
     try {
-      const summary = followSummary(
-        await fetchRecentActivity(row.follow.did),
-        now,
+      const cached = await cachedRecentActivity(
+        row.follow.did,
+        store,
+        maxAgeMs,
+        now.getTime(),
       );
+      if (cached.fromCache) {
+        fromCache++;
+        oldest = Math.min(oldest, cached.savedAt);
+      }
+      const summary = followSummary(cached.recent, now);
       row.summary = summary;
       row.status = row.follow.block ?? followStatus(summary);
     } catch {
@@ -479,6 +505,22 @@ export async function renderFollows(
       : "",
     failed > 0,
   );
+  if (fromCache) {
+    const rescan = h(
+      "button",
+      { type: "button", className: "secondary rescan" },
+      "Rescan",
+    );
+    rescan.addEventListener("click", () => {
+      renderFollows(root, actor, setStatus, 0).catch((error: unknown) =>
+        setStatus(error instanceof Error ? error.message : String(error), true),
+      );
+    });
+    freshness.replaceChildren(
+      `Activity of ${integer.format(fromCache)} of ${integer.format(active.length)} accounts comes from this browser's cache, the oldest from ${ago(now.getTime() - oldest)}. `,
+      rescan,
+    );
+  }
   updateCounts();
   sort();
 }

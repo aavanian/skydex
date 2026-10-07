@@ -1,12 +1,14 @@
 import "./style.css";
 import { activitiesFromCar } from "./activities";
 import { actorFromInput } from "./actor-input";
-import { downloadRepo, resolveAccount } from "./repo";
+import { cachedRepo } from "./cached";
+import { resolveAccount } from "./repo";
 import { h } from "./ui/dom";
 import { finishLogin } from "./ui/key";
 import { renderFollows } from "./ui/follows";
 import { introCard } from "./ui/intro";
 import { renderProfile } from "./ui/profile";
+import { pageStore } from "./ui/store";
 
 /** Where the source is published, as the AGPL requires for network use. */
 const SOURCE_URL = "https://github.com/aavanian/skydex";
@@ -110,11 +112,18 @@ async function analyze(actor: string) {
   try {
     setStatus(`Resolving ${actor}…`);
     const account = await resolveAccount(actor);
-    setStatus(`Downloading @${account.handle}'s history…`);
-    const car = await downloadRepo(account);
+    setStatus(`Loading @${account.handle}'s history…`);
+    const { car, fromCache, savedAt } = await cachedRepo(
+      account,
+      await pageStore(),
+    );
     setStatus("Analyzing…");
     const activities = activitiesFromCar(account.did, car);
-    setStatus("");
+    setStatus(
+      fromCache
+        ? `History from this browser's cache, downloaded ${new Date(savedAt).toLocaleString()}; no newer activity found.`
+        : "",
+    );
     renderProfile(results, account, activities);
   } catch (error) {
     setStatus(error instanceof Error ? error.message : String(error), true);

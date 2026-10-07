@@ -421,3 +421,7 @@ a.bookmarklet {
   text-decoration: none;
   cursor: grab;
 }
+button.rescan {
+  padding: 1px 10px;
+  font-size: 12px;
+}

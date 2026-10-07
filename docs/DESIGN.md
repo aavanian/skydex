@@ -14,8 +14,16 @@ building block lists or starter packs.
   any static host, but on an origin of its own: pages sharing an
   origin (e.g. `<user>.github.io/<repo>`) can read each other's browser
   storage, including the OpenRouter key.
-- All fetching and analysis happen in the browser. Results cached in
-  IndexedDB, keyed by DID + repo revision.
+- All fetching and analysis happen in the browser. Public data is
+  cached in IndexedDB (`src/store.ts`):
+  - Repositories, keyed by DID with the revision they were downloaded
+    at. A revisit asks the PDS for the latest revision
+    (`com.atproto.sync.getLatestCommit`, one small request) and reuses
+    the copy when unchanged, or when the check fails. The 20 most
+    recently saved are kept.
+  - Each follow's recent activity for the follows scan, as type and
+    time only, reused for 24 hours unless rescanned. The follow list
+    itself is always fetched fresh, so unfollows show at once.
 - Entry points:
   - `?actor=<handle|did>` URL parameter.
   - Bookmarklet: parses `/profile/<actor>` from the current page URL
