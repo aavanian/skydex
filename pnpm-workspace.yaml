@@ -1,0 +1,7 @@
+# Dependency install scripts that may run. Neither is needed: core-js only
+# prints a funding message, and esbuild's binary comes from its platform
+# package. Denying them explicitly keeps CI installs (where pnpm fails on
+# unreviewed scripts) working without running third-party code.
+allowBuilds:
+  core-js: false
+  esbuild: false
