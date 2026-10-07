@@ -1,3 +1,4 @@
+import { fromUint8Array } from "@atcute/repo";
 import { activityType, type ActivityType } from "./taxonomy";
 
 /** A record as read from a repository, before interpretation. */
@@ -47,4 +48,9 @@ export function activitiesFrom(
   return activities.sort(
     (a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
   );
+}
+
+/** Extracts activities from a repository CAR export. */
+export function activitiesFromCar(did: string, car: Uint8Array): Activity[] {
+  return activitiesFrom(did, fromUint8Array(car));
 }
