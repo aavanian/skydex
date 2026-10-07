@@ -51,10 +51,12 @@ interface Row {
   failed?: boolean;
   unfollowed?: boolean;
   element: HTMLTableRowElement;
+  /**
+   * Kept across row refreshes so that a pending unfollow confirmation
+   * survives scan updates, and only this cell changes when acting.
+   */
+  actionCell: HTMLTableCellElement;
 }
-
-/** Builds the trailing cell holding a row's actions. */
-type ActionCell = (row: Row) => HTMLTableCellElement;
 
 type SortKey = "account" | "last" | "lastOwn" | "rate" | "organic" | "status";
 
@@ -80,15 +82,62 @@ function dateCell(date: Date | undefined): string {
   return date ? dateFormat.format(date) : "—";
 }
 
-function fillRow(row: Row, action: ActionCell): void {
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+/** "Opens elsewhere" icon: a box with an arrow leaving its corner. */
+function externalIcon(): SVGSVGElement {
+  const svg = document.createElementNS(SVG_NS, "svg");
+  svg.setAttribute("viewBox", "0 0 16 16");
+  svg.setAttribute("aria-hidden", "true");
+  for (const d of [
+    "M9 2h5v5",
+    "M14 2 7 9",
+    "M12 9v4a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h4",
+  ]) {
+    const path = document.createElementNS(SVG_NS, "path");
+    path.setAttribute("d", d);
+    svg.append(path);
+  }
+  return svg;
+}
+
+function displayName(follow: Follow): string {
+  return follow.handle === follow.did ? follow.did : `@${follow.handle}`;
+}
+
+/** Display name with a line-break opportunity after a DID's method prefix. */
+function breakableName(follow: Follow): (string | HTMLElement)[] {
+  const name = displayName(follow);
+  const prefix = name.match(/^did:[a-z]+:/)?.[0];
+  return prefix ? [prefix, h("wbr"), name.slice(prefix.length)] : [name];
+}
+
+function fillRow(row: Row): void {
   const { follow, summary, status } = row;
   const account = h(
     "td",
-    {},
+    { className: "account" },
     h(
       "a",
-      { href: `?actor=${encodeURIComponent(follow.did)}`, target: "_blank" },
-      follow.handle === follow.did ? follow.did : `@${follow.handle}`,
+      {
+        href: `?actor=${encodeURIComponent(follow.did)}`,
+        target: "_blank",
+        title: "Analyze this account",
+      },
+      ...breakableName(follow),
+    ),
+    " ",
+    h(
+      "a",
+      {
+        href: `https://bsky.app/profile/${follow.did}`,
+        target: "_blank",
+        rel: "noopener",
+        className: "external",
+        title: "Open on bsky.app",
+        attrs: { "aria-label": `Open ${displayName(follow)} on bsky.app` },
+      },
+      externalIcon(),
     ),
     follow.displayName
       ? h("div", { className: "footnote" }, follow.displayName)
@@ -98,20 +147,20 @@ function fillRow(row: Row, action: ActionCell): void {
     row.element.replaceChildren(
       account,
       h("td", { colSpan: 5, className: "footnote" }, "Could not load"),
-      action(row),
+      row.actionCell,
     );
     return;
   }
   if (follow.unavailable) {
     row.element.replaceChildren(
       account,
-      h("td", { colSpan: 4, className: "footnote" }, "—"),
+      ...[1, 2, 3, 4].map(() => h("td", {}, "—")),
       h(
         "td",
         { className: "follow-status gone" },
         STATUS_LABELS[follow.unavailable],
       ),
-      action(row),
+      row.actionCell,
     );
     return;
   }
@@ -119,7 +168,7 @@ function fillRow(row: Row, action: ActionCell): void {
     row.element.replaceChildren(
       account,
       h("td", { colSpan: 5, className: "footnote" }, "…"),
-      action(row),
+      row.actionCell,
     );
     return;
   }
@@ -139,7 +188,7 @@ function fillRow(row: Row, action: ActionCell): void {
     ),
     h("td", {}, summary.total ? percent.format(summary.shares.organic) : "—"),
     h("td", { className: `follow-status ${status}` }, STATUS_LABELS[status]),
-    action(row),
+    row.actionCell,
   );
 }
 
@@ -161,48 +210,77 @@ export async function renderFollows(
   const now = new Date();
   let session: OAuthSession | undefined;
 
-  const action: ActionCell = (row) => {
-    if (row.unfollowed) {
-      return h("td", { className: "follow-status gone" }, "Unfollowed");
-    }
+  /** Shows what can be done with a row: nothing, unfollow, or confirm. */
+  function renderAction(row: Row): void {
+    const cell = row.actionCell;
     const uri = row.follow.followUri;
-    if (!session || !uri) return h("td");
-    const button = h(
+    if (row.unfollowed) {
+      cell.replaceChildren(
+        h("span", { className: "follow-status" }, "Unfollowed"),
+      );
+      return;
+    }
+    if (!session || !uri) {
+      cell.replaceChildren();
+      return;
+    }
+    const unfollow = h(
       "button",
       { type: "button", className: "secondary unfollow" },
       "Unfollow",
     );
-    button.addEventListener("click", async () => {
-      const name =
-        row.follow.handle === row.follow.did
-          ? row.follow.did
-          : `@${row.follow.handle}`;
-      if (!session || !confirm(`Unfollow ${name}?`)) return;
-      button.disabled = true;
-      try {
-        await deleteFollow(session.fetchHandler.bind(session), uri);
-        row.unfollowed = true;
-        refresh(row);
-        updateCounts();
-      } catch (error) {
-        button.disabled = false;
-        setStatus(error instanceof Error ? error.message : String(error), true);
-      }
+    unfollow.addEventListener("click", () => {
+      const confirmButton = h(
+        "button",
+        {
+          type: "button",
+          className: "unfollow",
+          title: `Unfollow ${displayName(row.follow)}`,
+        },
+        "Confirm",
+      );
+      const cancel = h(
+        "button",
+        { type: "button", className: "secondary unfollow" },
+        "Cancel",
+      );
+      cancel.addEventListener("click", () => renderAction(row));
+      confirmButton.addEventListener("click", async () => {
+        if (!session) return renderAction(row);
+        confirmButton.disabled = true;
+        cancel.disabled = true;
+        try {
+          await deleteFollow(session.fetchHandler.bind(session), uri);
+          row.unfollowed = true;
+          renderAction(row);
+          updateCounts();
+        } catch (error) {
+          renderAction(row);
+          setStatus(
+            error instanceof Error ? error.message : String(error),
+            true,
+          );
+        }
+      });
+      cell.replaceChildren(confirmButton, " ", cancel);
+      confirmButton.focus();
     });
-    return h("td", {}, button);
-  };
-  const refresh = (row: Row) => fillRow(row, action);
+    cell.replaceChildren(unfollow);
+  }
 
   const rows: Row[] = follows.map((follow) => {
     const row: Row = {
       follow,
       element: h("tr"),
+      actionCell: h("td", { className: "action" }),
       status: follow.unavailable,
     };
-    refresh(row);
+    fillRow(row);
     return row;
   });
   const tbody = h("tbody", {}, ...rows.map((r) => r.element));
+  const headerRow = h("tr");
+  const table = h("table", {}, h("thead", {}, headerRow), tbody);
 
   let sortKey: SortKey = "last";
   let ascending = true;
@@ -214,7 +292,6 @@ export async function renderFollows(
     ["organic", "Organic share"],
     ["status", "Status"],
   ];
-  const headerRow = h("tr");
   function sort() {
     rows.sort((a, b) => {
       const x = sortValue(a, sortKey);
@@ -283,7 +360,8 @@ export async function renderFollows(
       out.addEventListener("click", async () => {
         const ending = session;
         session = undefined;
-        rows.forEach(refresh);
+        table.classList.remove("can-unfollow");
+        rows.forEach(renderAction);
         showLogin();
         if (ending) {
           const { logOut } = await import("../auth/session");
@@ -328,7 +406,8 @@ export async function renderFollows(
             `Log in as @${subject.handle} to unfollow from this list`,
           );
         }
-        rows.forEach(refresh);
+        table.classList.add("can-unfollow");
+        rows.forEach(renderAction);
         showLogin();
       } catch (error) {
         popup.close();
@@ -359,11 +438,7 @@ export async function renderFollows(
         { className: "footnote" },
         `Based on each account's latest 100 posts, replies and reposts. Dormant: nothing in ${RECENT_DAYS} days. No own posts lately: only reposts or replies in ${RECENT_DAYS} days. Gone: deactivated, suspended or deleted. Hidden by a block: no direct block found, so likely a block list.`,
       ),
-      h(
-        "div",
-        { className: "table-scroll follows" },
-        h("table", {}, h("thead", {}, headerRow), tbody),
-      ),
+      h("div", { className: "table-scroll follows" }, table),
     ),
   );
 
@@ -380,7 +455,7 @@ export async function renderFollows(
     } catch {
       row.failed = true;
     }
-    refresh(row);
+    fillRow(row);
     setStatus(
       `Scanned ${integer.format(++done)} of ${integer.format(active.length)}…`,
     );

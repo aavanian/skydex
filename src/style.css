@@ -6,6 +6,7 @@
   --text-secondary: #52514e;
   --text-muted: #898781;
   --grid: #e1e0d9;
+  --band: #f3f2ee;
   --axis: #c3c2b7;
   --border: rgba(11, 11, 11, 0.1);
   --accent: #2a78d6;
@@ -24,6 +25,7 @@
     --text-secondary: #c3c2b7;
     --text-muted: #898781;
     --grid: #2c2c2a;
+    --band: #222221;
     --axis: #383835;
     --border: rgba(255, 255, 255, 0.1);
     --accent: #3987e5;
@@ -41,6 +43,7 @@
   --text-secondary: #c3c2b7;
   --text-muted: #898781;
   --grid: #2c2c2a;
+  --band: #222221;
   --axis: #383835;
   --border: rgba(255, 255, 255, 0.1);
   --accent: #3987e5;
@@ -339,12 +342,37 @@ nav.modes a[aria-current="page"] {
 .table-scroll.follows {
   max-height: none;
 }
-.follows td,
-.follows th {
+.follows td {
   white-space: nowrap;
 }
-.follows td:first-child {
+.follows th {
+  vertical-align: bottom;
+}
+.follows td.account {
   white-space: normal;
+  overflow-wrap: break-word;
+  min-width: 12em;
+}
+.follows tbody tr:nth-child(even) {
+  background: var(--band);
+}
+/* Room for "Confirm Cancel" from the start, so confirming never widens the table. */
+table.can-unfollow td.action {
+  width: 10.5em;
+  text-align: left;
+}
+a.external {
+  color: var(--text-muted);
+}
+a.external svg {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vertical-align: -1px;
 }
 .follows td a {
   color: var(--text-primary);
@@ -356,20 +384,8 @@ button.sort {
   font-weight: 600;
   font-size: 13px;
 }
-.follow-status.dormant,
-.follow-status.never {
-  color: var(--text-primary);
-  font-weight: 600;
-}
 .follow-status.active {
   color: var(--text-muted);
-}
-.follow-status.gone,
-.follow-status.blocks-you,
-.follow-status.you-block,
-.follow-status.hidden {
-  color: var(--text-primary);
-  font-weight: 600;
 }
 .login {
   margin: 4px 0 8px;
