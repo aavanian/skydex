@@ -1,6 +1,7 @@
 import type { Activity } from "../activities";
 import { AnswerCache } from "../classify/cache";
 import { contentItems, tagSummary } from "../classify/content";
+import { datasetLines } from "../classify/dataset";
 import { withDerivedTags } from "../classify/derived";
 import { decide, DEFAULT_DECISION_MODEL } from "../classify/decisions";
 import {
@@ -10,6 +11,7 @@ import {
 } from "../classify/questions";
 import type { Account } from "../repo";
 import { DEFAULT_SETTINGS, windowStart, type Settings } from "../settings";
+import { postUrl } from "../links";
 import { h } from "./dom";
 import { keyStore, startLogin } from "./key";
 
@@ -32,11 +34,6 @@ function browserStorage(): Storage | undefined {
   } catch {
     return undefined;
   }
-}
-
-function postUrl(uri: string): string {
-  const [, , did, , rkey] = uri.split("/");
-  return `https://bsky.app/profile/${did}/post/${rkey}`;
 }
 
 function results(
@@ -109,10 +106,8 @@ export function contentCard(
   now: Date,
   settings: Settings = DEFAULT_SETTINGS,
 ): HTMLElement {
-  const cache = new AnswerCache(
-    browserStorage(),
-    questionsVersion(CONTENT_QUESTIONS, DEFAULT_DECISION_MODEL),
-  );
+  const version = questionsVersion(CONTENT_QUESTIONS, DEFAULT_DECISION_MODEL);
+  const cache = new AnswerCache(browserStorage(), version);
   const since = windowStart(settings, now);
   const body = h("div");
   const card = h(
@@ -213,6 +208,27 @@ export function contentCard(
       keyStore.clear();
       keyForm();
     });
+    const download = h(
+      "button",
+      { type: "button", className: "secondary" },
+      "Download dataset",
+    );
+    download.addEventListener("click", () => {
+      const jsonl = datasetLines(
+        items,
+        new Map(activities.map((a) => [a.uri, a])),
+        withDerivedTags(known),
+        { model: DEFAULT_DECISION_MODEL, questionsVersion: version },
+      );
+      const link = h("a", {
+        href: URL.createObjectURL(
+          new Blob([jsonl], { type: "application/x-ndjson" }),
+        ),
+        download: `${account.handle}-posts.jsonl`,
+      });
+      link.click();
+      URL.revokeObjectURL(link.href);
+    });
     const output = h("div");
     if (known.size) output.replaceChildren(results(known, texts));
 
@@ -260,6 +276,8 @@ export function contentCard(
           "div",
           { className: "toggle" },
           pending.length ? run : undefined,
+          " ",
+          download,
           " ",
           forget,
         ),

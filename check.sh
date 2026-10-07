@@ -6,4 +6,5 @@ cd "$(dirname "$0")"
 pnpm exec prettier --check .
 pnpm exec eslint .
 pnpm exec tsc --noEmit
+pnpm exec tsc --noEmit -p tsconfig.bench.json
 pnpm exec vitest run

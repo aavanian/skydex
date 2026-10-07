@@ -27,24 +27,30 @@ function didDocumentUrl(did: string): string {
   throw new Error(`Unsupported DID method: ${did}`);
 }
 
+/** Resolves a handle (or passes through a DID) to the account's DID. */
+export async function resolveDid(
+  actor: string,
+  fetchFn: typeof fetch = fetch,
+): Promise<string> {
+  const id = actor.replace(/^@/, "");
+  if (id.startsWith("did:")) return id;
+  try {
+    const { did } = await getJson<{ did: string }>(
+      fetchFn,
+      `${APPVIEW}/xrpc/com.atproto.identity.resolveHandle?handle=${encodeURIComponent(id)}`,
+    );
+    return did;
+  } catch {
+    throw new Error(`Could not resolve handle ${id}`);
+  }
+}
+
 /** Resolves a handle or DID to the account's identity and data server. */
 export async function resolveAccount(
   actor: string,
   fetchFn: typeof fetch = fetch,
 ): Promise<Account> {
-  let did = actor.replace(/^@/, "");
-  if (!did.startsWith("did:")) {
-    const handle = did;
-    try {
-      ({ did } = await getJson<{ did: string }>(
-        fetchFn,
-        `${APPVIEW}/xrpc/com.atproto.identity.resolveHandle?handle=${encodeURIComponent(handle)}`,
-      ));
-    } catch {
-      throw new Error(`Could not resolve handle ${handle}`);
-    }
-  }
-
+  const did = await resolveDid(actor, fetchFn);
   const doc = await getJson<DidDocument>(fetchFn, didDocumentUrl(did));
   const pds = doc.service?.find((s) => s.id.endsWith("#atproto_pds"));
   if (!pds) throw new Error(`No data server listed for ${did}`);

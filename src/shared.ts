@@ -8,17 +8,22 @@ interface QuoteEmbed {
   record?: { uri?: string; record?: { uri?: string } };
 }
 
+/** URI of the post a post record quotes, if any. */
+export function quotedUri(record: object): string | undefined {
+  const embed = (record as { embed?: QuoteEmbed }).embed;
+  if (embed?.$type === "app.bsky.embed.recordWithMedia") {
+    return embed.record?.record?.uri;
+  }
+  if (embed?.$type === "app.bsky.embed.record") return embed.record?.uri;
+  return undefined;
+}
+
 /** URI of the post a repost or quote points to. */
 export function sharedUri(activity: Activity): string | undefined {
   if (activity.type === "repost") {
     return (activity.record as { subject?: { uri?: string } }).subject?.uri;
   }
-  if (activity.type === "quote") {
-    const embed = (activity.record as { embed?: QuoteEmbed }).embed;
-    return embed?.$type === "app.bsky.embed.recordWithMedia"
-      ? embed.record?.record?.uri
-      : embed?.record?.uri;
-  }
+  if (activity.type === "quote") return quotedUri(activity.record);
   return undefined;
 }
 

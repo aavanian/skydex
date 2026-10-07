@@ -2,10 +2,23 @@ import type { Activity } from "../activities";
 import { sharedUri } from "../shared";
 import type { DecisionItem } from "./decisions";
 
+export interface PostState {
+  post: string;
+  quoted_post?: string;
+}
+
+/**
+ * What the classifier is shown for one post: its text and, for quotes,
+ * the quoted post's text when available, since tone often depends on it.
+ */
+export function postState(text: string, quoted?: object): PostState {
+  const quotedText = (quoted as { text?: string } | undefined)?.text;
+  return quotedText ? { post: text, quoted_post: quotedText } : { post: text };
+}
+
 /**
  * Organic and quote posts with text since `since`, newest first, at
- * most `max`, shaped as decision state. Quote posts carry the quoted
- * text when it could be fetched, since tone often depends on it.
+ * most `max`, shaped as decision state.
  */
 export function contentItems(
   activities: Activity[],
@@ -21,13 +34,14 @@ export function contentItems(
     const text = (activity.record as { text?: string }).text?.trim();
     if (!text) continue;
 
-    const state: { post: string; quoted_post?: string } = { post: text };
     const quotedUri = sharedUri(activity);
-    const quoted = quotedUri
-      ? (sharedPosts.get(quotedUri) as { text?: string } | undefined)?.text
-      : undefined;
-    if (quoted) state.quoted_post = quoted;
-    items.push({ id: activity.uri, state });
+    items.push({
+      id: activity.uri,
+      state: postState(
+        text,
+        quotedUri ? sharedPosts.get(quotedUri) : undefined,
+      ),
+    });
   }
   return items;
 }
