@@ -33,7 +33,7 @@ questions in `src/classify/questions.ts`. To compare models or
 question wordings against posts you have labelled:
 
 1. Build a dataset: one JSON object per line, with a post reference
-   and the labels you expect. `bench/labels.jsonl` is an example:
+   and the labels you expect, for example:
 
    ```json
    {
@@ -49,7 +49,7 @@ question wordings against posts you have labelled:
 2. Run, in your own terminal so the key stays out of logs:
 
    ```sh
-   OPENROUTER_API_KEY=… pnpm bench bench/labels.jsonl \
+   OPENROUTER_API_KEY=… pnpm bench bench/my-labels.jsonl \
      --model cloudflare/clef-flash,typesafe/jev-1.13 \
      --questions bench/my-questions.json \
      --out bench/results.out.jsonl
@@ -58,8 +58,10 @@ question wordings against posts you have labelled:
    `--questions` takes JSON files shaped like `CONTENT_QUESTIONS`.
    The report shows precision, recall and accuracy per tag, the cost,
    and every post where the model disagrees with your label. `--out`
-   writes every answer as a dataset again, text included
-   (`*.out.jsonl` files are git-ignored).
+   writes every answer as a dataset again, text included.
+
+Datasets in `bench/` (`*.jsonl`) are git-ignored: they point at real
+people's posts, so keep them local.
 
 Labels can cover any tag the app reports: `promotional`, `snark`,
 `politics`, and the derived `political_snark` (politics and snark
