@@ -1,6 +1,7 @@
 import { AnswerCache } from "../classify/cache";
 import {
   DEFAULT_SETTINGS,
+  MODEL_PATTERN,
   saveSettings,
   validSettings,
   type Settings,
@@ -70,7 +71,7 @@ export function settingsPage(current: Settings): HTMLElement {
     type: "text",
     value: current.model,
     spellcheck: false,
-    pattern: "[\\w.-]+/[\\w.:-]+",
+    pattern: MODEL_PATTERN,
     required: true,
   });
   const modelField = h(

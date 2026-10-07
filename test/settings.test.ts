@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import {
   DEFAULT_SETTINGS,
   loadSettings,
+  MODEL_PATTERN,
   saveSettings,
   windowStart,
 } from "../src/settings";
@@ -77,4 +78,12 @@ describe("settings storage", () => {
     expect(loadSettings(storage)).toEqual(DEFAULT_SETTINGS);
     expect(loadSettings(undefined)).toEqual(DEFAULT_SETTINGS);
   });
+});
+
+test("the model pattern also compiles as an HTML input pattern (v flag)", () => {
+  const html = new RegExp(`^(?:${MODEL_PATTERN})$`, "v");
+
+  expect(html.test("cloudflare/clef-flash")).toBe(true);
+  expect(html.test("typesafe/jev-1.13")).toBe(true);
+  expect(html.test("not a model")).toBe(false);
 });

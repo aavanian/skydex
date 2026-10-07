@@ -20,6 +20,13 @@ export const DEFAULT_SETTINGS: Settings = {
 
 const KEY = "skydex-settings";
 
+/**
+ * An OpenRouter model id such as `cloudflare/clef-flash`. Hyphens are
+ * escaped so the same source also compiles as an HTML input pattern,
+ * which browsers evaluate with the stricter `v` flag.
+ */
+export const MODEL_PATTERN = String.raw`[\w.\-]+/[\w.:\-]+`;
+
 const isIntegerIn = (min: number, max: number) => (value: unknown) =>
   Number.isInteger(value) &&
   (value as number) >= min &&
@@ -29,7 +36,8 @@ const VALID: { [K in keyof Settings]: (value: unknown) => boolean } = {
   windowMonths: isIntegerIn(1, 120),
   maxPosts: isIntegerIn(1, 5000),
   model: (value) =>
-    typeof value === "string" && /^[\w.-]+\/[\w.:-]+$/.test(value),
+    typeof value === "string" &&
+    new RegExp(`^(?:${MODEL_PATTERN})$`).test(value),
   scanCacheHours: isIntegerIn(0, 24 * 30),
 };
 
