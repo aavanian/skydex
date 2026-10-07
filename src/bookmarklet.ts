@@ -1,0 +1,11 @@
+/**
+ * A bookmarklet that opens Skydex, served at `appUrl`, in a new tab for
+ * the page being viewed. Skydex works out the account from the page's
+ * address, so it works on any web client with `/profile/<actor>` URLs.
+ */
+export function bookmarkletHref(appUrl: string): string {
+  const target = JSON.stringify(`${appUrl}?actor=`);
+  return `javascript:${encodeURIComponent(
+    `void open(${target}+encodeURIComponent(location.href))`,
+  )}`;
+}

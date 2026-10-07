@@ -5,6 +5,7 @@ import { downloadRepo, resolveAccount } from "./repo";
 import { h } from "./ui/dom";
 import { finishLogin } from "./ui/key";
 import { renderFollows } from "./ui/follows";
+import { introCard } from "./ui/intro";
 import { renderProfile } from "./ui/profile";
 
 /** Where the source is published, as the AGPL requires for network use. */
@@ -150,6 +151,7 @@ if (mode === "follows") input.placeholder = "Your handle, DID or profile URL";
 finishLogin().then(
   () => {
     if (initial) analyzeFromInput(initial);
+    else if (mode === "actor") results.replaceChildren(introCard());
   },
   (error: unknown) => {
     if (initial) input.value = initial;

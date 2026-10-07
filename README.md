@@ -6,6 +6,10 @@ how much it posts, reposts, quotes and replies, whether it has gone
 quiet, what it talks about, and (with an OpenRouter key) how much of
 it is promotional, snarky or political.
 
+To open it from any Bluesky profile, drag the bookmarklet on Skydex's
+start page to your bookmarks bar and click it while viewing a profile
+or post, in bsky.app or any web client with `/profile/` links.
+
 Everything runs in the browser, with no server. No Bluesky login is
 needed, except to unfollow from the follows scan: that optional login
 asks only for permission to delete follow records, lives in the page's
