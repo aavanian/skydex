@@ -37,6 +37,22 @@ describe("sharedUris", () => {
     ).toEqual([ref("q2").uri, ref("q1").uri, ref("r1").uri]);
   });
 
+  test("leaves out quoted records that are not posts, such as starter packs", () => {
+    const quotingStarterPack = activity("quote", "2025-09-01T00:00:00Z", {
+      embed: {
+        $type: "app.bsky.embed.record",
+        record: {
+          uri: "at://did:plc:other/app.bsky.graph.starterpack/3abc",
+          cid: "bafy",
+        },
+      },
+    });
+
+    expect(
+      sharedUris([quotingStarterPack], new Date("2025-01-01T00:00:00Z"), 500),
+    ).toEqual([]);
+  });
+
   test("keeps at most `max` URIs", () => {
     expect(sharedUris(activities, new Date("2020-01-01T00:00:00Z"), 2)).toEqual(
       [ref("q2").uri, ref("q1").uri],
@@ -73,6 +89,22 @@ describe("fetchPosts", () => {
     expect(posts.get(ref("7").uri)).toEqual({
       text: `text of ${ref("7").uri}`,
     });
+  });
+
+  test("treats a batch the AppView fails on as unavailable posts", async () => {
+    const uris = Array.from({ length: 30 }, (_, i) => ref(String(i)).uri);
+    const fetchFn: typeof fetch = async (input) => {
+      const batch = new URL(String(input)).searchParams.getAll("uris");
+      return batch.length === 25
+        ? new Response("boom", { status: 500 })
+        : Response.json({
+            posts: batch.map((uri) => ({ uri, record: { text: "ok" } })),
+          });
+    };
+
+    const posts = await fetchPosts(uris, fetchFn);
+
+    expect(posts.size).toBe(5);
   });
 
   test("returns nothing for deleted posts the AppView omits", async () => {

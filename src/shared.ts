@@ -8,14 +8,22 @@ interface QuoteEmbed {
   record?: { uri?: string; record?: { uri?: string } };
 }
 
-/** URI of the post a post record quotes, if any. */
+const POST_COLLECTION = "app.bsky.feed.post";
+
+/**
+ * URI of the post a post record quotes, if any. Record embeds can also
+ * point at starter packs, lists or feeds, which are not posts and are
+ * left out.
+ */
 export function quotedUri(record: object): string | undefined {
   const embed = (record as { embed?: QuoteEmbed }).embed;
-  if (embed?.$type === "app.bsky.embed.recordWithMedia") {
-    return embed.record?.record?.uri;
-  }
-  if (embed?.$type === "app.bsky.embed.record") return embed.record?.uri;
-  return undefined;
+  const uri =
+    embed?.$type === "app.bsky.embed.recordWithMedia"
+      ? embed.record?.record?.uri
+      : embed?.$type === "app.bsky.embed.record"
+        ? embed.record?.uri
+        : undefined;
+  return uri?.split("/")[3] === POST_COLLECTION ? uri : undefined;
 }
 
 /** URI of the post a repost or quote points to. */
@@ -54,25 +62,37 @@ function chunks<T>(items: T[]): T[][] {
   return result;
 }
 
+/**
+ * Runs an XRPC query on values 25 at a time. With `skipFailedBatches`,
+ * a batch the server fails on contributes nothing instead of failing
+ * the whole query.
+ */
 async function batchedQuery<T>(
   method: string,
   param: string,
   values: string[],
   fetchFn: typeof fetch,
+  skipFailedBatches = false,
 ): Promise<T[]> {
   const pages = await Promise.all(
     chunks(values).map(async (chunk) => {
       const url = new URL(`${APPVIEW}/xrpc/${method}`);
       for (const value of chunk) url.searchParams.append(param, value);
       const response = await fetchFn(url.toString());
-      if (!response.ok) throw new Error(`${response.status} from ${method}`);
+      if (!response.ok) {
+        if (skipFailedBatches) return {};
+        throw new Error(`${response.status} from ${method}`);
+      }
       return (await response.json()) as Record<string, T[]>;
     }),
   );
   return pages.flatMap((page) => Object.values(page).flat());
 }
 
-/** Fetches post records by URI. Deleted posts are absent from the result. */
+/**
+ * Fetches post records by URI. Deleted posts, and posts in a batch the
+ * AppView fails on, are absent from the result.
+ */
 export async function fetchPosts(
   uris: string[],
   fetchFn: typeof fetch = fetch,
@@ -82,6 +102,7 @@ export async function fetchPosts(
     "uris",
     uris,
     fetchFn,
+    true,
   );
   return new Map(posts.map((p) => [p.uri, p.record]));
 }
