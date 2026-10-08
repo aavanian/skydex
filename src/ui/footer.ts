@@ -20,9 +20,16 @@ function githubIcon(): SVGSVGElement {
 
 /**
  * Site footer. `root` is the relative path to the app's start page, so
- * that links work from nested pages too.
+ * that links work from nested pages too. In the app itself, the
+ * privacy and guide pages open in a new tab so the app keeps its state.
  */
-export function siteFooter(root = "./"): HTMLElement {
+export function siteFooter(root = "./", newTab = false): HTMLElement {
+  const pageLink = (path: string, label: string) =>
+    h(
+      "a",
+      { href: `${root}${path}`, ...(newTab ? { target: "_blank" } : {}) },
+      label,
+    );
   return h(
     "footer",
     { className: "site-footer footnote" },
@@ -36,9 +43,9 @@ export function siteFooter(root = "./"): HTMLElement {
         "AGPL-3.0-or-later",
       ),
       " · ",
-      h("a", { href: `${root}privacy/` }, "Privacy"),
+      pageLink("privacy/", "Privacy"),
       " · ",
-      h("a", { href: `${root}guide/` }, "Guide"),
+      pageLink("guide/", "Guide"),
     ),
     h(
       "a",
