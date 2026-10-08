@@ -42,7 +42,9 @@ describe("termsOf", () => {
 
   test("keeps words that name a topic, even frequent ones", () => {
     expect(
-      termsOf({ text: "trump american bps yoy adj net march mars sun" }).words,
+      termsOf({
+        text: "trump american bps yoy adj net march mars sun computer research web website world information state states état",
+      }).words,
     ).toEqual([
       "trump",
       "american",
@@ -53,7 +55,22 @@ describe("termsOf", () => {
       "march",
       "mars",
       "sun",
+      "computer",
+      "research",
+      "web",
+      "website",
+      "world",
+      "information",
+      "state",
+      "states",
+      "état",
     ]);
+  });
+
+  test("drops a standard stopword list's words and internet shorthand", () => {
+    expect(
+      termsOf({ text: "almost imo nonetheless thereafter quelconque" }).words,
+    ).toEqual([]);
   });
 
   test("drops French stopwords and keeps accented words", () => {

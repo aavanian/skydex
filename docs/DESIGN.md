@@ -156,8 +156,12 @@ Pluggable `Classifier` interface: `classify(posts) -> tags per post`.
     - **Chat LLM** (later): OpenAI-compatible chat completions and the
       Anthropic Messages API, with a free-text model id.
 
-Topic extraction for the cloud: tokenisation + stopwords + hashtags +
-link domains, with TF-IDF against a baseline; LLM topics optional.
+Topic extraction for the cloud: word frequency after removing
+stopwords: the vendored stopwords-iso English and French lists
+(`src/vendor/stopwords-iso`, MIT), plus Skydex's own additions
+(conversational filler, internet shorthand, calendar and number
+words), minus a keep-list of words that name topics (e.g. web,
+research, state, March, Mars).
 
 ## Settings
 
