@@ -9,6 +9,7 @@ import { UNKNOWN_VERSION } from "./src/version.ts";
  * provides the commit if git cannot describe it.
  */
 function buildVersion(): string {
+  if (process.env.WORKERS_CI === "1") fetchTags();
   try {
     return execSync("git describe --tags --always --dirty --abbrev=7", {
       encoding: "utf8",
@@ -16,6 +17,26 @@ function buildVersion(): string {
     }).trim();
   } catch {
     return process.env.WORKERS_CI_COMMIT_SHA?.slice(0, 7) ?? UNKNOWN_VERSION;
+  }
+}
+
+/**
+ * Cloudflare builds from a shallow clone without tags, where `git
+ * describe` can only name the commit. Fetching the history and tags
+ * lets it name the release too. Best effort: on failure the commit is
+ * still shown.
+ */
+function fetchTags(): void {
+  const run = (command: string) =>
+    execSync(command, { stdio: "ignore", timeout: 60_000 });
+  try {
+    run("git fetch --quiet --tags --unshallow");
+  } catch {
+    try {
+      run("git fetch --quiet --tags");
+    } catch {
+      // Offline or no remote: describe falls back to the commit.
+    }
   }
 }
 
