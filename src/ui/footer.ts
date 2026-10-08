@@ -1,3 +1,4 @@
+import { versionUrl } from "../version";
 import { h } from "./dom";
 
 /** Where the source is published, as the AGPL requires for network use. */
@@ -16,6 +17,18 @@ function githubIcon(): SVGSVGElement {
   path.setAttribute("d", GITHUB_MARK);
   svg.append(path);
   return svg;
+}
+
+/** The running build's version, linked to its commit or tag. */
+function version(): HTMLElement {
+  const url = versionUrl(__SKYDEX_VERSION__, SOURCE_URL);
+  return url
+    ? h(
+        "a",
+        { href: url, rel: "noopener", title: "Build version" },
+        __SKYDEX_VERSION__,
+      )
+    : h("span", { title: "Build version" }, __SKYDEX_VERSION__);
 }
 
 /**
@@ -48,10 +61,11 @@ export function siteFooter(root = "./", newTab = false): HTMLElement {
       pageLink("guide/", "Guide"),
     ),
     h(
-      "a",
-      { href: SOURCE_URL, rel: "noopener", className: "source" },
-      githubIcon(),
-      " Source",
+      "span",
+      { className: "source" },
+      h("a", { href: SOURCE_URL, rel: "noopener" }, githubIcon(), " Source"),
+      " · ",
+      version(),
     ),
   );
 }

@@ -415,13 +415,15 @@ footer.site-footer {
 footer.site-footer a {
   color: inherit;
 }
-footer.site-footer a.source {
+footer.site-footer .source {
+  margin-left: auto;
+}
+footer.site-footer .source a:first-child {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  margin-left: auto;
 }
-footer.site-footer a.source svg {
+footer.site-footer .source svg {
   width: 14px;
   height: 14px;
   fill: currentColor;
