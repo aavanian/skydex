@@ -188,9 +188,17 @@ export function followStatus(summary: FollowSummary): FollowStatus {
 /** Most block records read per account when looking for a block. */
 const MAX_BLOCK_PAGES = 50;
 
+/**
+ * Bluesky's follow list may not yet list a follow this recent, so its
+ * absence there says nothing about blocks.
+ */
+const NEW_FOLLOW_MS = 10 * 60 * 1000;
+
 interface SubjectRecord {
   uri: string;
   subject: string;
+  /** When the record says it was created, in milliseconds. */
+  createdAt: number;
 }
 
 async function listSubjects(
@@ -210,11 +218,20 @@ async function listSubjects(
     url.searchParams.set("limit", String(PAGE_SIZE));
     if (cursor) url.searchParams.set("cursor", cursor);
     const page = await getJson<{
-      records: { uri: string; value: { subject?: string } }[];
+      records: {
+        uri: string;
+        value: { subject?: string; createdAt?: string };
+      }[];
       cursor?: string;
     }>(fetchFn, url);
     for (const r of page.records) {
-      if (r.value.subject) found.push({ uri: r.uri, subject: r.value.subject });
+      if (r.value.subject) {
+        found.push({
+          uri: r.uri,
+          subject: r.value.subject,
+          createdAt: Date.parse(r.value.createdAt ?? ""),
+        });
+      }
     }
     cursor = page.records.length ? page.cursor : undefined;
   } while (cursor && ++pages < maxPages);
@@ -262,16 +279,19 @@ async function blocksYou(
 export async function fetchFollowing(
   actor: string,
   fetchFn: typeof fetch = fetch,
+  now = Date.now(),
 ): Promise<{ subject: Follow; follows: Follow[] }> {
   const account = await resolveAccount(actor, fetchFn);
-  const followRecords = new Map<string, string>();
-  for (const { subject, uri } of await listSubjects(
+  const followRecords = new Map<string, SubjectRecord>();
+  for (const record of await listSubjects(
     account.pds,
     account.did,
     "app.bsky.graph.follow",
     fetchFn,
   )) {
-    if (!followRecords.has(subject)) followRecords.set(subject, uri);
+    if (!followRecords.has(record.subject)) {
+      followRecords.set(record.subject, record);
+    }
   }
   const subjects = [...followRecords.keys()];
   const [profiles, visible, ownBlocks] = await Promise.all([
@@ -286,7 +306,7 @@ export async function fetchFollowing(
     const profile = profiles.get(did);
     return {
       ...(profile ? toFollow(profile) : { did, handle: did }),
-      followUri: followRecords.get(did),
+      followUri: followRecords.get(did)?.uri,
     };
   });
   await runPool(follows, 6, async (follow) => {
@@ -295,11 +315,12 @@ export async function fetchFollowing(
       const handle = await lastHandle(follow.did, fetchFn);
       if (handle) follow.lastHandle = handle;
     } else if (!listed.has(follow.did)) {
-      follow.block = blocked.has(follow.did)
-        ? "you-block"
-        : (await blocksYou(follow.did, account.did, fetchFn))
-          ? "blocks-you"
-          : "hidden";
+      const isNew =
+        now - (followRecords.get(follow.did)?.createdAt ?? 0) < NEW_FOLLOW_MS;
+      if (blocked.has(follow.did)) follow.block = "you-block";
+      else if (await blocksYou(follow.did, account.did, fetchFn)) {
+        follow.block = "blocks-you";
+      } else if (!isNew) follow.block = "hidden";
     }
   });
 

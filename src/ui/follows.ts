@@ -527,22 +527,24 @@ export async function renderFollows(
       : "",
     failed > 0,
   );
-  if (fromCache) {
-    const rescan = h(
-      "button",
-      { type: "button", className: "secondary rescan" },
-      "Rescan",
+  const rescan = h(
+    "button",
+    { type: "button", className: "secondary rescan" },
+    "Rescan activity",
+  );
+  rescan.title =
+    "Fetch every account's latest activity again, ignoring this browser's cache";
+  rescan.addEventListener("click", () => {
+    renderFollows(root, actor, setStatus, 0).catch((error: unknown) =>
+      setStatus(error instanceof Error ? error.message : String(error), true),
     );
-    rescan.addEventListener("click", () => {
-      renderFollows(root, actor, setStatus, 0).catch((error: unknown) =>
-        setStatus(error instanceof Error ? error.message : String(error), true),
-      );
-    });
-    freshness.replaceChildren(
-      `Activity of ${integer.format(fromCache)} of ${integer.format(active.length)} accounts comes from this browser's cache, the oldest from ${ago(now.getTime() - oldest)}. `,
-      rescan,
-    );
-  }
+  });
+  freshness.replaceChildren(
+    fromCache
+      ? `Activity of ${integer.format(fromCache)} of ${integer.format(active.length)} accounts comes from this browser's cache, the oldest from ${ago(now.getTime() - oldest)}. `
+      : "Activity fetched just now. ",
+    rescan,
+  );
   updateCounts();
   sort();
 }

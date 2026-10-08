@@ -116,12 +116,23 @@ function lookupView(mode: "actor" | "follows"): View {
     autocomplete: "off",
     spellcheck: false,
   });
-  const form = h(
-    "form",
-    { className: "lookup" },
-    input,
-    h("button", { type: "submit" }, mode === "follows" ? "Scan" : "Analyze"),
+  const submit = h(
+    "button",
+    { type: "submit" },
+    mode === "follows" ? "Scan" : "Analyze",
   );
+  const form = h("form", { className: "lookup" }, input, submit);
+  /**
+   * Once a follows list is shown, submitting the same account re-reads
+   * who it follows (activity stays cached), hence "Refresh list".
+   */
+  const label = () => {
+    if (mode !== "follows") return;
+    const showing =
+      view.actor !== undefined && actorFromInput(input.value) === view.actor;
+    submit.textContent = showing ? "Refresh list" : "Scan";
+  };
+  input.addEventListener("input", label);
   const { status, setStatus } = statusLine();
   const results = h("div");
   form.addEventListener("submit", (event) => {
@@ -142,6 +153,7 @@ function lookupView(mode: "actor" | "follows"): View {
     load(actor) {
       view.actor = actor;
       input.value = actor ?? "";
+      label();
       setStatus("");
       if (!actor) {
         results.replaceChildren(mode === "actor" ? introCard() : "");

@@ -22,10 +22,18 @@ const follows = [ok, blocksMe, iBlock, listHidden]
   .map((f) => f.did)
   .concat([deactivated, deleted, suspended]);
 
+/** When each follow record was created; others are old. */
+const followedAt: Record<string, string> = {
+  [listHidden.did]: "2026-06-01T12:00:00.000Z",
+};
+
 function records(subjects: string[], repo = "did:plc:x") {
   return subjects.map((subject) => ({
     uri: `at://${repo}/app.bsky.graph.follow/f-${subject.split(":").at(-1)}`,
-    value: { subject },
+    value: {
+      subject,
+      createdAt: followedAt[subject] ?? "2025-01-01T00:00:00.000Z",
+    },
   }));
 }
 const followUri = (did: string) =>
@@ -113,4 +121,21 @@ test("lists every followed account from the follow records, with why some are un
       unavailable: "suspended",
     },
   ]);
+});
+
+test("a follow made minutes ago is not taken for one hidden by a block", async () => {
+  // Bluesky's follow list may not list a brand new follow yet.
+  const fiveMinutesLater = Date.parse("2026-06-01T12:05:00.000Z");
+
+  const { follows: result } = await fetchFollowing(
+    me,
+    fetchFn,
+    fiveMinutesLater,
+  );
+
+  expect(result.find((f) => f.did === listHidden.did)).toEqual({
+    ...listHidden,
+    followUri: followUri(listHidden.did),
+  });
+  expect(result.find((f) => f.did === blocksMe.did)?.block).toBe("blocks-you");
 });
