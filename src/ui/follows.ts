@@ -16,6 +16,13 @@ import { pageStore } from "./store";
 
 const CONCURRENCY = 6;
 
+/**
+ * The Bluesky login, kept in page memory only (never saved), so that it
+ * survives rescans and switching views but not closing or reloading
+ * the tab.
+ */
+let session: OAuthSession | undefined;
+
 type DisplayStatus =
   | FollowStatus
   | NonNullable<Follow["unavailable"]>
@@ -229,7 +236,7 @@ export async function renderFollows(
   );
   const { subject, follows } = await fetchFollowing(actor);
   const now = new Date();
-  let session: OAuthSession | undefined;
+  const loggedIn = () => session?.did === subject.did;
 
   /** Shows what can be done with a row: nothing, unfollow, or confirm. */
   function renderAction(row: Row): void {
@@ -241,7 +248,7 @@ export async function renderFollows(
       );
       return;
     }
-    if (!session || !uri) {
+    if (!loggedIn() || !uri) {
       cell.replaceChildren();
       return;
     }
@@ -267,7 +274,7 @@ export async function renderFollows(
       );
       cancel.addEventListener("click", () => renderAction(row));
       confirmButton.addEventListener("click", async () => {
-        if (!session) return renderAction(row);
+        if (!session || !loggedIn()) return renderAction(row);
         confirmButton.disabled = true;
         cancel.disabled = true;
         try {
@@ -376,7 +383,7 @@ export async function renderFollows(
 
   const login = h("div", { className: "login" });
   function showLogin() {
-    if (session) {
+    if (session && loggedIn()) {
       const out = h(
         "button",
         { type: "button", className: "secondary" },
@@ -403,12 +410,22 @@ export async function renderFollows(
       );
       return;
     }
+    let pending: AbortController | undefined;
     const button = h(
       "button",
       { type: "button", className: "secondary" },
       `Log in as @${subject.handle} to unfollow`,
     );
+    const note = h(
+      "span",
+      { className: "footnote" },
+      " Asks only for permission to delete follows. The login lasts until this tab is closed or reloaded and is never saved.",
+    );
     button.addEventListener("click", async () => {
+      // Skydex cannot see the popup being closed (the login server cuts
+      // the link between the windows), so while waiting the button
+      // cancels instead.
+      if (pending) return pending.abort();
       // Opened synchronously with the click so it is not blocked; the
       // login library loads only now, on first use.
       const popup = window.open(
@@ -420,36 +437,43 @@ export async function renderFollows(
         setStatus("Allow popups for this page to log in", true);
         return;
       }
-      button.disabled = true;
+      pending = new AbortController();
+      const { signal } = pending;
+      button.textContent = "Cancel login";
+      note.textContent =
+        " Finish logging in in the popup. Closed it without logging in? Cancel here.";
       try {
         const { logIn, logOut } = await import("../auth/session");
-        session = await logIn(subject.did, popup);
-        if (session.did !== subject.did) {
-          await logOut(session).catch(() => undefined);
-          session = undefined;
+        const started = await logIn(subject.did, popup, signal);
+        if (started.did !== subject.did) {
+          await logOut(started).catch(() => undefined);
           throw new Error(
             `Log in as @${subject.handle} to unfollow from this list`,
           );
         }
+        session = started;
         table.classList.add("can-unfollow");
         rows.forEach(renderAction);
-        showLogin();
       } catch (error) {
         popup.close();
-        button.disabled = false;
-        setStatus(error instanceof Error ? error.message : String(error), true);
+        if (!signal.aborted) {
+          setStatus(
+            error instanceof Error ? error.message : String(error),
+            true,
+          );
+        }
+      } finally {
+        pending = undefined;
+        showLogin();
       }
     });
-    login.replaceChildren(
-      button,
-      h(
-        "span",
-        { className: "footnote" },
-        " Asks only for permission to delete follows. The login lasts until this tab is closed or reloaded and is never saved.",
-      ),
-    );
+    login.replaceChildren(button, note);
   }
   showLogin();
+  if (loggedIn()) {
+    table.classList.add("can-unfollow");
+    rows.forEach(renderAction);
+  }
 
   root.replaceChildren(
     h(

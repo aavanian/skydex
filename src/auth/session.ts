@@ -5,7 +5,7 @@ import {
   type RuntimeImplementation,
 } from "@atproto/oauth-client";
 import { APPVIEW } from "../repo";
-import { CALLBACK_CHANNEL } from "./channel";
+import { waitForCallback } from "./callback-wait";
 import { clientMetadataFor } from "./client-metadata";
 import { MemoryStore } from "./memory-store";
 
@@ -36,35 +36,23 @@ function oauthClient(): OAuthClient {
   return client;
 }
 
-function waitForCallback(): Promise<URLSearchParams> {
-  return new Promise((resolve, reject) => {
-    const channel = new BroadcastChannel(CALLBACK_CHANNEL);
-    const timeout = setTimeout(() => {
-      channel.close();
-      reject(new Error("Bluesky login timed out"));
-    }, LOGIN_TIMEOUT_MS);
-    channel.onmessage = ({ data }: MessageEvent<string>) => {
-      clearTimeout(timeout);
-      channel.close();
-      resolve(new URLSearchParams(data));
-    };
-  });
-}
-
 /**
  * Logs in as `actor` in `popup`, a window the caller opened directly
- * from a click (browsers block popups opened later). Login state and
+ * from a click (browsers block popups opened later). Aborting `signal`
+ * abandons the attempt, e.g. when the viewer closed the popup. Login state and
  * tokens are kept in this page's memory only: closing or reloading the
  * tab ends the session, and nothing is written to browser storage.
  */
 export async function logIn(
   actor: string,
   popup: Window,
+  signal: AbortSignal,
 ): Promise<OAuthSession> {
   try {
     const url = await oauthClient().authorize(actor, { display: "popup" });
     popup.location.href = url.href;
-    const { session } = await oauthClient().callback(await waitForCallback());
+    const params = await waitForCallback(signal, LOGIN_TIMEOUT_MS);
+    const { session } = await oauthClient().callback(params);
     return session;
   } finally {
     popup.close();
