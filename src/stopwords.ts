@@ -39,13 +39,14 @@ probably put quite read real right says seem seems seen something
 someone sometimes sort start sure take talk tell thanks thank time times
 today tomorrow tonight top try trying turn used using use week weeks
 whole work working works year years yesterday yet folks totally literally
-anyway oh ok okay omg wow`;
+anyway oh ok okay omg wow afaik ago apparently article available full
+large let likely post posts without either makes making`;
 
 const GENERIC_FRENCH = `aller alors autres avoir beaucoup bonne bon bonnes bons chose choses
 dire dit enfin faut gens grand grande jamais jour jours merci mieux moment
 monde non oui personne petit petite peu peut-être plein plutôt point
 premier première sait savent savoir semble souvent temps toujours trop
-truc trucs vraiment voir veut vois voilà année années aujourd'hui demain
+truc trucs vraiment voir veut vois voilà contre année années aujourd'hui demain
 hier`;
 
 /**

@@ -23,6 +23,15 @@ describe("termsOf", () => {
     ).toEqual(["apiculture"]);
   });
 
+  test("drops filler words common on Bluesky that say nothing about a topic", () => {
+    expect(
+      termsOf({
+        text: "afaik the article apparently ago available full large let likely post posts without either makes making",
+      }).words,
+    ).toEqual([]);
+    expect(termsOf({ text: "contre" }).words).toEqual([]);
+  });
+
   test("drops French stopwords and keeps accented words", () => {
     expect(
       termsOf({ text: "Les élections sont très importantes pour nous" }).words,
