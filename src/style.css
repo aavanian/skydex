@@ -415,18 +415,19 @@ footer.site-footer {
 footer.site-footer a {
   color: inherit;
 }
+/* One flex row so the icon, "Source", separator and version share a line. */
 footer.site-footer .source {
-  margin-left: auto;
-}
-footer.site-footer .source a:first-child {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 0.35em;
+  margin-left: auto;
 }
 footer.site-footer .source svg {
   width: 14px;
   height: 14px;
+  margin-right: 5px;
   fill: currentColor;
+  vertical-align: -2px;
 }
 a.bookmarklet {
   display: inline-block;

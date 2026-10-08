@@ -63,7 +63,7 @@ export function siteFooter(root = "./", newTab = false): HTMLElement {
     h(
       "span",
       { className: "source" },
-      h("a", { href: SOURCE_URL, rel: "noopener" }, githubIcon(), " Source"),
+      h("a", { href: SOURCE_URL, rel: "noopener" }, githubIcon(), "Source"),
       " · ",
       version(),
     ),
