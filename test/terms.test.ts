@@ -32,6 +32,30 @@ describe("termsOf", () => {
     expect(termsOf({ text: "contre" }).words).toEqual([]);
   });
 
+  test("drops generic quantities, months and number words", () => {
+    expect(
+      termsOf({
+        text: "absolutely given sees since among far half high higher low lower month months run three sep oct september janvier septembre trois",
+      }).words,
+    ).toEqual([]);
+  });
+
+  test("keeps words that name a topic, even frequent ones", () => {
+    expect(
+      termsOf({ text: "trump american bps yoy adj net march mars sun" }).words,
+    ).toEqual([
+      "trump",
+      "american",
+      "bps",
+      "yoy",
+      "adj",
+      "net",
+      "march",
+      "mars",
+      "sun",
+    ]);
+  });
+
   test("drops French stopwords and keeps accented words", () => {
     expect(
       termsOf({ text: "Les élections sont très importantes pour nous" }).words,

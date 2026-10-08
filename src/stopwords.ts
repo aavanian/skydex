@@ -40,7 +40,8 @@ someone sometimes sort start sure take talk tell thanks thank time times
 today tomorrow tonight top try trying turn used using use week weeks
 whole work working works year years yesterday yet folks totally literally
 anyway oh ok okay omg wow afaik ago apparently article available full
-large let likely post posts without either makes making`;
+large let likely post posts without either makes making absolutely
+given sees since among far half high higher low lower month months run`;
 
 const GENERIC_FRENCH = `aller alors autres avoir beaucoup bonne bon bonnes bons chose choses
 dire dit enfin faut gens grand grande jamais jour jours merci mieux moment
@@ -50,11 +51,23 @@ truc trucs vraiment voir veut vois voilà contre année années aujourd'hui dema
 hier`;
 
 /**
+ * Dates and counting, in English and French. Month and day names that
+ * also name a topic (March, Mars, Sun) are kept.
+ */
+const CALENDAR_AND_NUMBERS = `january february april june july august september october november
+december jan feb mar apr jun jul aug sep sept oct nov dec monday tuesday
+wednesday thursday friday saturday sunday mon tue wed thu fri sat
+janvier février avril mai juin juillet août septembre octobre novembre
+décembre janv févr avr juil déc lundi mardi mercredi jeudi vendredi
+samedi dimanche two three four five six seven eight nine ten deux trois
+quatre cinq huit neuf dix`;
+
+/**
  * English and French words too common to say anything about a topic:
  * grammatical words plus generic conversational vocabulary.
  */
 export const STOPWORDS: ReadonlySet<string> = new Set(
-  `${ENGLISH} ${FRENCH} ${GENERIC_ENGLISH} ${GENERIC_FRENCH}`
+  `${ENGLISH} ${FRENCH} ${GENERIC_ENGLISH} ${GENERIC_FRENCH} ${CALENDAR_AND_NUMBERS}`
     .split(/\s+/)
     .filter(Boolean),
 );
