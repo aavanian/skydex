@@ -106,10 +106,40 @@
           </dd>
         </dl>
         <p>
-          Anything running in the page could read these, so Skydex only runs its
-          own code (enforced by a Content-Security-Policy) and cannot be
-          embedded by other sites. Give your OpenRouter key a small credit
-          limit.
+          Anything running in the page could read these (typically browser
+          extensions allowed to read and change data on all websites), so Skydex
+          only runs its own code (enforced by a Content-Security-Policy) and
+          cannot be embedded by other sites. Give your OpenRouter key a small
+          credit limit.
+        </p>
+      </section>
+
+      <section class="card prose">
+        <h2>Removing it all</h2>
+        <p>
+          <em>Clear cached data</em> in <a href="../?settings">Settings</a>
+          removes downloaded histories, follows scan data and content tags. To
+          also remove your settings, the last scanned account and a remembered
+          OpenRouter key, clear this site's data in your browser:
+        </p>
+        <ul>
+          <li>
+            Firefox: click the padlock in the address bar, then
+            <em>Clear cookies and site data…</em>
+          </li>
+          <li>
+            Chrome, Edge and other Chromium browsers: click the icon left of the
+            address, then <em>Site settings</em> → <em>Delete data</em>.
+          </li>
+          <li>
+            Safari: <em>Settings</em> → <em>Privacy</em> →
+            <em>Manage Website Data…</em>, search for
+            <code>skydex.avanian.net</code> and remove it.
+          </li>
+        </ul>
+        <p>
+          Closing the tab already forgets a key that was not remembered and any
+          Bluesky login.
         </p>
       </section>
 
