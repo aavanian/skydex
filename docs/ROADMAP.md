@@ -10,6 +10,7 @@ Ideas considered but not built. `DESIGN.md` describes what exists.
   now", "subscribe", "pre-order"), shop, newsletter or crowdfunding
   domains. Snark: only very weak heuristics, shown as low-confidence.
   Politics: none, too hard for keywords.
+  
 - **Pluggable classifiers and providers**, selected in settings: a
   `Classifier` interface (`classify(posts) -> tags per post`) with the
   Decisions API as one adapter, plus chat LLMs (OpenAI-compatible chat
@@ -24,11 +25,16 @@ Ideas considered but not built. `DESIGN.md` describes what exists.
   carefully reworded questions. Steps: collect a large set of posts,
   study how to get a usable description of each link, then run evals of
   context and question wording against labelled posts.
+  
 - **Re-study the politics and snark questions** the same way (without
   fetching links).
+  
 - **Model choice.** `cloudflare/clef-flash` is a placeholder for
   `typesafe/jev-1.13`, region-blocked for us on OpenRouter; a local
-  model is also a candidate.
+  model is also a candidate. See this
+  [benchmark](https://huggingface.co/datasets/LocalLLaMA/typed-decisions)
+  (unfortunately, clef is not covered at the time of writing).
+  
 - Any change to questions or context changes the cache fingerprint:
   plan how earlier answers and labelled datasets carry over.
 
