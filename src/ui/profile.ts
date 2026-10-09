@@ -1,5 +1,6 @@
 import * as Plot from "@observablehq/plot";
 import type { Activity } from "../activities";
+import { abortableFetch } from "../abort";
 import { fetchPosts } from "../appview";
 import type { Account } from "../repo";
 import {
@@ -297,27 +298,25 @@ function timelineCard(
   );
 }
 
-/** Stops the previous profile's charts from following theme changes. */
-let previousProfile: AbortController | undefined;
-
-/** Renders the single-account profile into `root`. */
+/**
+ * Renders the single-account profile into `root`. Once `signal` fires,
+ * its charts stop following theme changes and its fetches stop.
+ */
 export function renderProfile(
   root: HTMLElement,
   account: Account,
   activities: Activity[],
   settings: Settings,
+  signal: AbortSignal,
   now = new Date(),
 ): void {
-  previousProfile?.abort();
-  previousProfile = new AbortController();
-  const { signal } = previousProfile;
   const summary = summarize(activities, now);
   const uris = sharedUris(
     activities,
     windowStart(settings, now),
     settings.maxPosts,
   );
-  const shared = fetchPosts(uris).then((posts) => ({
+  const shared = fetchPosts(uris, abortableFetch(signal)).then((posts) => ({
     requested: uris.length,
     posts,
   }));

@@ -1,5 +1,6 @@
 import "./style.css";
 import { activitiesFromCar } from "./activities";
+import { abortableFetch, unlessAborted } from "./abort";
 import { actorFromInput } from "./actor-input";
 import { browserStorage } from "./browser-storage";
 import { cachedRepo } from "./cached";
@@ -63,20 +64,28 @@ function statusLine(): { status: HTMLElement; setStatus: SetStatus } {
   };
 }
 
+/**
+ * Analyzes `actor` into `results`. Once `signal` fires (another account
+ * was requested), it stops fetching and leaves the page alone.
+ */
 async function analyze(
   actor: string,
   results: HTMLElement,
   setStatus: SetStatus,
+  signal: AbortSignal,
 ) {
   results.replaceChildren();
+  const fetchFn = abortableFetch(signal);
   try {
     setStatus(`Resolving ${actor}…`);
-    const account = await resolveAccount(actor);
+    const account = await resolveAccount(actor, fetchFn);
     setStatus(`Loading @${account.handle}'s history…`);
     const { car, fromCache, savedAt } = await cachedRepo(
       account,
       await pageStore(),
+      fetchFn,
     );
+    if (signal.aborted) return;
     setStatus("Analyzing…");
     const activities = activitiesFromCar(account.did, car);
     setStatus(
@@ -84,7 +93,13 @@ async function analyze(
         ? `History from this browser's cache, downloaded ${new Date(savedAt).toLocaleString()}; no newer activity found.`
         : "",
     );
-    renderProfile(results, account, activities, loadSettings(browserStorage()));
+    renderProfile(
+      results,
+      account,
+      activities,
+      loadSettings(browserStorage()),
+      signal,
+    );
   } catch (error) {
     setStatus(errorMessage(error), true);
   }
@@ -121,6 +136,24 @@ function lookupView(mode: "actor" | "follows"): View {
   input.addEventListener("input", label);
   const { status, setStatus } = statusLine();
   const results = h("div");
+  /** The load in progress; starting another aborts it. */
+  let loading: AbortController | undefined;
+  function start() {
+    loading?.abort();
+    loading = new AbortController();
+    return {
+      signal: loading.signal,
+      setStatus: unlessAborted(loading.signal, setStatus),
+    };
+  }
+  function scanFollows(actor: string, maxAgeMs: number) {
+    const load = start();
+    renderFollows(results, actor, {
+      ...load,
+      maxAgeMs,
+      rescan: () => scanFollows(actor, 0),
+    }).catch((error: unknown) => load.setStatus(errorMessage(error), true));
+  }
   form.addEventListener("submit", (event) => {
     event.preventDefault();
     const actor = actorFromInput(input.value);
@@ -142,18 +175,15 @@ function lookupView(mode: "actor" | "follows"): View {
       label();
       setStatus("");
       if (!actor) {
+        loading?.abort();
         results.replaceChildren(mode === "actor" ? introCard() : "");
       } else if (mode === "follows") {
         remember(actor);
         const { scanCacheHours } = loadSettings(browserStorage());
-        renderFollows(
-          results,
-          actor,
-          setStatus,
-          scanCacheHours * 60 * 60 * 1000,
-        ).catch((error: unknown) => setStatus(errorMessage(error), true));
+        scanFollows(actor, scanCacheHours * 60 * 60 * 1000);
       } else {
-        void analyze(actor, results, setStatus);
+        const load = start();
+        void analyze(actor, results, load.setStatus, load.signal);
       }
     },
   };

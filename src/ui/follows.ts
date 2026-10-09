@@ -1,3 +1,4 @@
+import { abortableFetch } from "../abort";
 import { cachedRecentActivity } from "../cached";
 import {
   followStatus,
@@ -203,14 +204,27 @@ function fillRow(row: Row): void {
 export async function renderFollows(
   root: HTMLElement,
   actor: string,
-  setStatus: (text: string, isError?: boolean) => void,
-  maxAgeMs: number,
+  {
+    setStatus,
+    maxAgeMs,
+    signal,
+    rescan,
+  }: {
+    setStatus: (text: string, isError?: boolean) => void;
+    maxAgeMs: number;
+    /** Fires when this scan is replaced: it then stops and draws nothing. */
+    signal: AbortSignal;
+    /** Starts a scan ignoring cached activity, replacing this one. */
+    rescan: () => void;
+  },
 ): Promise<void> {
   root.replaceChildren();
   setStatus(
     `Loading who @${actor} follows, and checking unavailable and blocked accounts…`,
   );
-  const { subject, follows } = await fetchFollowing(actor);
+  const fetchFn = abortableFetch(signal);
+  const { subject, follows } = await fetchFollowing(actor, fetchFn);
+  if (signal.aborted) return;
   const now = new Date();
   const loggedIn = () => blueskyLogin.canUnfollow(subject.did);
 
@@ -385,12 +399,14 @@ export async function renderFollows(
   let fromCache = 0;
   let oldest = now.getTime();
   await runPool(active, CONCURRENCY, async (row) => {
+    if (signal.aborted) return;
     try {
       const cached = await cachedRecentActivity(
         row.follow.did,
         store,
         maxAgeMs,
         now.getTime(),
+        fetchFn,
       );
       if (cached.fromCache) {
         fromCache++;
@@ -407,6 +423,7 @@ export async function renderFollows(
       `Scanned ${integer.format(++done)} of ${integer.format(active.length)}…`,
     );
   });
+  if (signal.aborted) return;
   const failed = rows.filter((r) => r.failed).length;
   setStatus(
     failed
@@ -414,23 +431,22 @@ export async function renderFollows(
       : "",
     failed > 0,
   );
-  const rescan = h(
+  const rescanButton = h(
     "button",
     { type: "button", className: "secondary rescan" },
     "Rescan activity",
   );
-  rescan.title =
+  rescanButton.title =
     "Fetch every account's latest activity again, ignoring this browser's cache";
-  rescan.addEventListener("click", () => {
-    renderFollows(root, actor, setStatus, 0).catch((error: unknown) =>
-      setStatus(errorMessage(error), true),
-    );
+  rescanButton.addEventListener("click", () => {
+    rescanButton.disabled = true;
+    rescan();
   });
   freshness.replaceChildren(
     fromCache
       ? `Activity of ${integer.format(fromCache)} of ${integer.format(active.length)} accounts comes from this browser's cache, the oldest from ${ago(now.getTime() - oldest)}. `
       : "Activity fetched just now. ",
-    rescan,
+    rescanButton,
   );
   updateCounts();
   sort();
