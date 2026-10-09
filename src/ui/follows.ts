@@ -6,23 +6,15 @@ import {
   type FollowSummary,
 } from "../follow-status";
 import { fetchFollowing, type Follow } from "../follows";
-import type { OAuthSession } from "@atproto/oauth-client";
-import { deleteFollow } from "../auth/unfollow";
 import { runPool } from "../pool";
 import { RECENT_DAYS } from "../stats";
+import { blueskyLogin, loginControl } from "./bluesky-login";
 import { h, icon } from "./dom";
 import { pageStore } from "./store";
 import { errorMessage } from "../errors";
 import { dateFormat, decimal, integer, percent } from "./format";
 
 const CONCURRENCY = 6;
-
-/**
- * The Bluesky login, kept in page memory only (never saved), so that it
- * survives rescans and switching views but not closing or reloading
- * the tab.
- */
-let session: OAuthSession | undefined;
 
 type DisplayStatus =
   | FollowStatus
@@ -220,7 +212,7 @@ export async function renderFollows(
   );
   const { subject, follows } = await fetchFollowing(actor);
   const now = new Date();
-  const loggedIn = () => session?.did === subject.did;
+  const loggedIn = () => blueskyLogin.canUnfollow(subject.did);
 
   /** Shows what can be done with a row: nothing, unfollow, or confirm. */
   function renderAction(row: Row): void {
@@ -258,11 +250,11 @@ export async function renderFollows(
       );
       cancel.addEventListener("click", () => renderAction(row));
       confirmButton.addEventListener("click", async () => {
-        if (!session || !loggedIn()) return renderAction(row);
+        if (!loggedIn()) return renderAction(row);
         confirmButton.disabled = true;
         cancel.disabled = true;
         try {
-          await deleteFollow(session.fetchHandler.bind(session), uri);
+          await blueskyLogin.unfollow(subject.did, uri);
           row.unfollowed = true;
           renderAction(row);
           updateCounts();
@@ -362,96 +354,13 @@ export async function renderFollows(
   }
   updateCounts();
 
-  const login = h("div", { className: "login" });
-  function showLogin() {
-    if (session && loggedIn()) {
-      const out = h(
-        "button",
-        { type: "button", className: "secondary" },
-        "Log out",
-      );
-      out.addEventListener("click", async () => {
-        const ending = session;
-        session = undefined;
-        table.classList.remove("can-unfollow");
-        rows.forEach(renderAction);
-        showLogin();
-        if (ending) {
-          const { logOut } = await import("../auth/session");
-          await logOut(ending).catch(() => undefined);
-        }
-      });
-      login.replaceChildren(
-        h(
-          "span",
-          { className: "footnote" },
-          `Logged in as @${subject.handle}. `,
-        ),
-        out,
-      );
-      return;
-    }
-    let pending: AbortController | undefined;
-    const button = h(
-      "button",
-      { type: "button", className: "secondary" },
-      `Log in as @${subject.handle} to unfollow`,
-    );
-    const note = h(
-      "span",
-      { className: "footnote" },
-      " Asks only for permission to delete follows. The login lasts until this tab is closed or reloaded and is never saved.",
-    );
-    button.addEventListener("click", async () => {
-      // Skydex cannot see the popup being closed (the login server cuts
-      // the link between the windows), so while waiting the button
-      // cancels instead.
-      if (pending) return pending.abort();
-      // Opened synchronously with the click so it is not blocked; the
-      // login library loads only now, on first use.
-      const popup = window.open(
-        "about:blank",
-        "bsky-login",
-        "width=600,height=700",
-      );
-      if (!popup) {
-        setStatus("Allow popups for this page to log in", true);
-        return;
-      }
-      pending = new AbortController();
-      const { signal } = pending;
-      button.textContent = "Cancel login";
-      note.textContent =
-        " Finish logging in in the popup. Closed it without logging in? Cancel here.";
-      try {
-        const { logIn, logOut } = await import("../auth/session");
-        const started = await logIn(subject.did, popup, signal);
-        if (started.did !== subject.did) {
-          await logOut(started).catch(() => undefined);
-          throw new Error(
-            `Log in as @${subject.handle} to unfollow from this list`,
-          );
-        }
-        session = started;
-        table.classList.add("can-unfollow");
-        rows.forEach(renderAction);
-      } catch (error) {
-        popup.close();
-        if (!signal.aborted) {
-          setStatus(errorMessage(error), true);
-        }
-      } finally {
-        pending = undefined;
-        showLogin();
-      }
-    });
-    login.replaceChildren(button, note);
-  }
-  showLogin();
-  if (loggedIn()) {
-    table.classList.add("can-unfollow");
+  /** Offers unfollowing on every row while logged in as the subject. */
+  function showActions() {
+    table.classList.toggle("can-unfollow", loggedIn());
     rows.forEach(renderAction);
   }
+  const login = loginControl(subject, setStatus, showActions);
+  if (loggedIn()) showActions();
 
   root.replaceChildren(
     h(

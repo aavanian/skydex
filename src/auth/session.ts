@@ -58,8 +58,3 @@ export async function logIn(
     popup.close();
   }
 }
-
-/** Revokes the session on the server; the page forgets it either way. */
-export async function logOut(session: OAuthSession): Promise<void> {
-  await session.signOut();
-}
