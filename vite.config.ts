@@ -140,5 +140,10 @@ export default defineConfig({
   test: {
     include: ["test/**/*.test.ts"],
     exclude: ["test/live/**"],
+    coverage: {
+      include: ["src/**/*.ts"],
+      exclude: ["src/vendor/**"],
+      reporter: ["text"],
+    },
   },
 });

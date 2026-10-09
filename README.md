@@ -21,6 +21,7 @@ memory, and ends when the tab is closed or reloaded.
 pnpm install
 pnpm dev          # http://127.0.0.1:5173/?actor=<handle>
 ./check.sh        # format, lint, types, tests
+pnpm coverage     # tests, with per-file coverage of src/
 pnpm test:live    # tests against the real Bluesky network
 ```
 
@@ -29,6 +30,9 @@ loopback IP addresses for local development.
 
 The privacy page (`privacy/`) and guide (`guide/`) are static pages
 built alongside the app; keep them in step with what the code does.
+
+Releases are git tags (`v0.1.0`); the footer shows `git describe` of
+the build. `package.json`'s version is not used and stays `0.0.0`.
 
 See `docs/DESIGN.md` for how it works and `docs/DISCOVERIES.md` for
 API quirks.
@@ -81,7 +85,8 @@ works (pages sharing an origin can read each other's browser storage).
 It runs at <https://skydex.avanian.net> as a Cloudflare Worker serving
 static assets (`wrangler.jsonc`), built from this repository:
 
-- Build command `pnpm build`, deploy command `npx wrangler deploy`.
+- Build command `pnpm build` (which runs the tests first), deploy
+  command `pnpm run deploy` (wrangler, pinned in the lockfile).
 - `SKYDEX_PUBLIC_URL` (default `https://skydex.avanian.net/`) is the
   address the build writes into `client-metadata.json`, which Bluesky
   fetches to identify the app for the unfollow login. Login only works
