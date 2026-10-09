@@ -94,23 +94,22 @@ console.log(
   `${posts.length} posts, ${posts.filter((p) => p.labels).length} labelled, threshold ${threshold}\n`,
 );
 
-for (const model of models) {
+let stoppedBy: string | undefined;
+runs: for (const model of models) {
   for (const [questionsName, questions] of questionSets) {
     const run = await decide(
       posts.map((p) => ({ id: p.uri, state: p.state })),
       questions,
       { apiKey, model },
-    ).catch((error: unknown) => {
-      console.error(error instanceof Error ? error.message : String(error));
-      process.exit(1);
-    });
+    );
     const answers = withDerivedTags(run.answers);
     const judged = posts.map((p) => ({ ...p, answers: answers.get(p.uri) }));
     const scores = scoreTags(judged, tags, threshold);
 
     console.log(
       `## ${model} · questions: ${questionsName} · cost $${run.cost.toFixed(5)}` +
-        (run.failed ? ` · ${run.failed} failed (${run.lastError})` : ""),
+        (run.failed ? ` · ${run.failed} failed (${run.lastError})` : "") +
+        (run.stoppedBy ? ` · stopped after ${run.answers.size} answers` : ""),
     );
     console.log("tag                 n  precision recall accuracy");
     for (const tag of tags) {
@@ -151,6 +150,10 @@ for (const model of models) {
         labels: p.labels,
       });
     }
+    if (run.stoppedBy) {
+      stoppedBy = run.stoppedBy;
+      break runs;
+    }
   }
 }
 
@@ -160,4 +163,9 @@ if (values.out) {
     results.map((r) => JSON.stringify(r)).join("\n") + "\n",
   );
   console.log(`Wrote ${results.length} answers to ${values.out}`);
+}
+
+if (stoppedBy) {
+  console.error(`Stopped: ${stoppedBy}`);
+  process.exitCode = 1;
 }

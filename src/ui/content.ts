@@ -255,23 +255,36 @@ export function contentCard(
 
     run.addEventListener("click", async () => {
       run.disabled = true;
+      status.className = "status";
       try {
-        const result = await decide(pending, CONTENT_QUESTIONS, {
-          apiKey: key,
-          model: settings.model,
-          onProgress: (done, total) => {
-            status.textContent = `Classified ${integer.format(done)} of ${integer.format(total)}…`;
+        const result = await decide(
+          pending.filter((i) => !known.has(i.id)),
+          CONTENT_QUESTIONS,
+          {
+            apiKey: key,
+            model: settings.model,
+            onProgress: (done, total) => {
+              status.textContent = `Classified ${integer.format(done)} of ${integer.format(total)}…`;
+            },
           },
-        });
+        );
         cache.save(account.did, result.answers);
         for (const [id, answer] of result.answers) known.set(id, answer);
+        if (known.size) output.replaceChildren(results(known, texts));
+        if (result.stoppedBy) {
+          const left = pending.filter((i) => !known.has(i.id)).length;
+          status.className = "status error";
+          status.textContent = `${result.stoppedBy}. Spent ${usd.format(result.cost)}; answers so far are kept.`;
+          run.textContent = `Classify ${integer.format(left)} posts`;
+          run.disabled = false;
+          return;
+        }
         status.textContent =
           `Done for ${usd.format(result.cost)}.` +
           (result.failed
             ? ` ${integer.format(result.failed)} posts failed (${result.lastError}); run again to retry them.`
             : "");
         run.remove();
-        output.replaceChildren(results(known, texts));
       } catch (error) {
         status.className = "status error";
         status.textContent =

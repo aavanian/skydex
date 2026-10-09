@@ -40,6 +40,12 @@ export interface DecisionResult {
   failed: number;
   /** Explanation of the most recent failure, if any item failed. */
   lastError?: string;
+  /**
+   * Why the run stopped before asking about every item: an unknown key,
+   * no credits left, or a refused request. Answers received until then,
+   * including to requests already in flight, are kept.
+   */
+  stoppedBy?: string;
 }
 
 interface DecisionResponse {
@@ -113,7 +119,10 @@ async function ask(
   }
 }
 
-/** Asks the same questions about every item, a few requests at a time. */
+/**
+ * Asks the same questions about every item, a few requests at a time.
+ * An error that would fail every request stops the run early.
+ */
 export async function decide(
   items: DecisionItem[],
   questions: Questions,
@@ -122,6 +131,7 @@ export async function decide(
   const result: DecisionResult = { answers: new Map(), cost: 0, failed: 0 };
   let done = 0;
   await runPool(items, options.concurrency ?? 8, async (item) => {
+    if (result.stoppedBy) return;
     try {
       const response = await ask(item, questions, options);
       result.cost += response.usage?.cost ?? 0;
@@ -135,7 +145,10 @@ export async function decide(
         ),
       );
     } catch (error) {
-      if (error instanceof FatalError) throw error;
+      if (error instanceof FatalError) {
+        result.stoppedBy ??= error.message;
+        return;
+      }
       result.failed++;
       result.lastError = error instanceof Error ? error.message : String(error);
     }

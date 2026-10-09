@@ -113,9 +113,9 @@ describe("decide", () => {
         { status: 401 },
       );
 
-    await expect(
-      decide(items, questions, { ...options, fetchFn }),
-    ).rejects.toThrow(
+    const result = await decide(items, questions, { ...options, fetchFn });
+
+    expect(result.stoppedBy).toBe(
       "OpenRouter did not recognise the API key (401: User not found.)",
     );
   });
@@ -127,9 +127,9 @@ describe("decide", () => {
         { status: 403 },
       );
 
-    await expect(
-      decide(items, questions, { ...options, fetchFn }),
-    ).rejects.toThrow(
+    const result = await decide(items, questions, { ...options, fetchFn });
+
+    expect(result.stoppedBy).toBe(
       "OpenRouter refused the request (403: Model not allowed for this key)",
     );
   });
@@ -138,11 +138,82 @@ describe("decide", () => {
     const fetchFn: typeof fetch = async () =>
       new Response("forbidden by proxy", { status: 403 });
 
-    await expect(
-      decide(items, questions, { ...options, fetchFn }),
-    ).rejects.toThrow(
+    const result = await decide(items, questions, { ...options, fetchFn });
+
+    expect(result.stoppedBy).toBe(
       "OpenRouter refused the request (403: forbidden by proxy)",
     );
+  });
+
+  test("stops when the account is out of credits", async () => {
+    const fetchFn: typeof fetch = async () =>
+      Response.json(
+        { error: { message: "Insufficient credits", code: 402 } },
+        { status: 402 },
+      );
+
+    const result = await decide(items, questions, { ...options, fetchFn });
+
+    expect(result.stoppedBy).toBe(
+      "OpenRouter account is out of credits (402: Insufficient credits)",
+    );
+  });
+
+  test("gives up on an item after 4 attempts at a server error", async () => {
+    let calls = 0;
+    const fetchFn: typeof fetch = async () => {
+      calls++;
+      return new Response("unavailable", { status: 503 });
+    };
+
+    const result = await decide(items.slice(0, 1), questions, {
+      ...options,
+      fetchFn,
+    });
+
+    expect(calls).toBe(4);
+    expect(result.failed).toBe(1);
+    expect(result.stoppedBy).toBeUndefined();
+    expect(result.lastError).toBe("OpenRouter error (503: unavailable)");
+  });
+
+  test("keeps the answers received before a stop, and asks nothing more", async () => {
+    const many = Array.from({ length: 5 }, (_, i) => ({
+      id: String(i),
+      state: { post: String(i) },
+    }));
+    let calls = 0;
+    const fetchFn: typeof fetch = async () =>
+      ++calls === 3
+        ? new Response("no credits", { status: 402 })
+        : Response.json(answer(0.5, 0.5));
+
+    const result = await decide(many, questions, {
+      ...options,
+      fetchFn,
+      concurrency: 1,
+    });
+
+    expect(calls).toBe(3);
+    expect([...result.answers.keys()]).toEqual(["0", "1"]);
+    expect(result.stoppedBy).toBe(
+      "OpenRouter account is out of credits (402: no credits)",
+    );
+  });
+
+  test("keeps answers to requests already in flight when the run stops", async () => {
+    const fetchFn: typeof fetch = async (_input, init) => {
+      if (JSON.parse(String(init?.body)).state.post === "lol sure") {
+        return new Response("no credits", { status: 402 });
+      }
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      return Response.json(answer(0.9, 0.1));
+    };
+
+    const result = await decide(items, questions, { ...options, fetchFn });
+
+    expect(result.stoppedBy).toBeDefined();
+    expect(result.answers.get("a")).toEqual({ promotional: 0.9, snark: 0.1 });
   });
 
   test("reports progress after each item", async () => {
