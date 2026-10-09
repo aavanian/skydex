@@ -41,7 +41,12 @@ export async function resolveDid(
   }
 }
 
-/** Resolves a handle or DID to the account's identity and data server. */
+/**
+ * Resolves a handle or DID to the account's identity and data server.
+ * Anyone can claim any handle in a DID document, so the claimed handle
+ * is shown only if it resolves back to the same DID (or is the handle
+ * just resolved to it); otherwise the account goes by its DID.
+ */
 export async function resolveAccount(
   actor: string,
   fetchFn: typeof fetch = fetch,
@@ -51,9 +56,15 @@ export async function resolveAccount(
   const pds = doc.service?.find((s) => s.id.endsWith("#atproto_pds"));
   if (!pds) throw new Error(`No data server listed for ${did}`);
 
+  const claimed = handleIn(doc);
+  const typed = actor.replace(/^@/, "").toLowerCase();
+  const verified =
+    claimed !== undefined &&
+    (claimed.toLowerCase() === typed ||
+      (await resolveDid(claimed, fetchFn).catch(() => undefined)) === did);
   return {
     did,
-    handle: handleIn(doc) ?? did,
+    handle: verified ? claimed : did,
     pds: pds.serviceEndpoint.replace(/\/$/, ""),
   };
 }

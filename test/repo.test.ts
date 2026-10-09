@@ -64,6 +64,44 @@ describe("resolveAccount", () => {
     );
   });
 
+  test("shows the DID when the claimed handle belongs to another account", async () => {
+    const fetch = fakeFetch({
+      "https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=alice.example.com":
+        { did: "did:plc:someone-else" },
+      "https://plc.directory/did:plc:abc": PLC_DOC,
+    });
+
+    expect((await resolveAccount("did:plc:abc", fetch)).handle).toBe(
+      "did:plc:abc",
+    );
+  });
+
+  test("shows the DID when the claimed handle does not resolve", async () => {
+    const fetch = fakeFetch({ "https://plc.directory/did:plc:abc": PLC_DOC });
+
+    expect((await resolveAccount("did:plc:abc", fetch)).handle).toBe(
+      "did:plc:abc",
+    );
+  });
+
+  test("checks a typed handle only once", async () => {
+    const urls: string[] = [];
+    const routes = fakeFetch({
+      "https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=alice.example.com":
+        { did: "did:plc:abc" },
+      "https://plc.directory/did:plc:abc": PLC_DOC,
+    });
+    const fetch: typeof globalThis.fetch = async (input, init) => {
+      urls.push(String(input));
+      return routes(input, init);
+    };
+
+    expect((await resolveAccount("alice.example.com", fetch)).handle).toBe(
+      "alice.example.com",
+    );
+    expect(urls.filter((u) => u.includes("resolveHandle"))).toHaveLength(1);
+  });
+
   test("fails with a readable error when the handle does not resolve", async () => {
     await expect(
       resolveAccount("nobody.invalid", fakeFetch({})),
