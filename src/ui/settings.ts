@@ -1,3 +1,4 @@
+import { browserStorage } from "../browser-storage";
 import { AnswerCache } from "../classify/cache";
 import {
   DEFAULT_SETTINGS,
@@ -10,14 +11,6 @@ import {
 } from "../settings";
 import { h } from "./dom";
 import { pageStore } from "./store";
-
-function browserStorage(): Storage | undefined {
-  try {
-    return localStorage;
-  } catch {
-    return undefined;
-  }
-}
 
 function numberField(
   label: string,

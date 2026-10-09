@@ -1,3 +1,4 @@
+import { browserStorage } from "../browser-storage";
 import { KeyStore } from "../classify/key-store";
 import {
   codeChallenge,
@@ -6,17 +7,9 @@ import {
   randomToken,
 } from "../classify/openrouter-auth";
 
-function storage(kind: "sessionStorage" | "localStorage"): Storage | undefined {
-  try {
-    return window[kind];
-  } catch {
-    return undefined;
-  }
-}
-
 export const keyStore = new KeyStore(
-  storage("sessionStorage"),
-  storage("localStorage"),
+  browserStorage("sessionStorage"),
+  browserStorage("localStorage"),
 );
 
 const LOGIN = "openrouter-login";
@@ -34,7 +27,7 @@ export async function startLogin(remember: boolean): Promise<void> {
     verifier: randomToken(),
     remember,
   };
-  storage("sessionStorage")?.setItem(LOGIN, JSON.stringify(pending));
+  browserStorage("sessionStorage")?.setItem(LOGIN, JSON.stringify(pending));
   const callback = new URL(location.href);
   callback.search = "";
   const actor = new URLSearchParams(location.search).get("actor");
@@ -61,8 +54,8 @@ export async function finishLogin(): Promise<void> {
   url.searchParams.delete("state");
   history.replaceState(null, "", url);
 
-  const raw = storage("sessionStorage")?.getItem(LOGIN);
-  storage("sessionStorage")?.removeItem(LOGIN);
+  const raw = browserStorage("sessionStorage")?.getItem(LOGIN);
+  browserStorage("sessionStorage")?.removeItem(LOGIN);
   const pending = raw ? (JSON.parse(raw) as PendingLogin) : undefined;
   if (!pending || pending.state !== returnedState) {
     throw new Error("OpenRouter login could not be verified; try again.");

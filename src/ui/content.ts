@@ -1,3 +1,4 @@
+import { browserStorage } from "../browser-storage";
 import type { Activity } from "../activities";
 import { AnswerCache } from "../classify/cache";
 import { contentItems, tagSummary } from "../classify/content";
@@ -27,14 +28,6 @@ const usd = new Intl.NumberFormat(undefined, {
   currency: "USD",
   maximumFractionDigits: 4,
 });
-
-function browserStorage(): Storage | undefined {
-  try {
-    return localStorage;
-  } catch {
-    return undefined;
-  }
-}
 
 function results(
   answers: Map<string, Record<string, number>>,

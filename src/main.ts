@@ -1,6 +1,7 @@
 import "./style.css";
 import { activitiesFromCar } from "./activities";
 import { actorFromInput } from "./actor-input";
+import { browserStorage } from "./browser-storage";
 import { cachedRepo } from "./cached";
 import { resolveAccount } from "./repo";
 import { routeFrom, searchFor, type Route } from "./route";
@@ -20,25 +21,13 @@ if (!app) throw new Error("Missing #app element");
 type Mode = Route["mode"];
 const FOLLOWS_ACTOR = "follows-actor";
 
-function browserStorage(): Storage | undefined {
-  try {
-    return localStorage;
-  } catch {
-    return undefined;
-  }
-}
-
 function remembered(): string | undefined {
-  try {
-    return localStorage.getItem(FOLLOWS_ACTOR) || undefined;
-  } catch {
-    return undefined;
-  }
+  return browserStorage()?.getItem(FOLLOWS_ACTOR) || undefined;
 }
 
 function remember(actor: string): void {
   try {
-    localStorage.setItem(FOLLOWS_ACTOR, actor);
+    browserStorage()?.setItem(FOLLOWS_ACTOR, actor);
   } catch {
     // Not remembered: the field simply starts empty next time.
   }
