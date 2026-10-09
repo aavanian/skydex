@@ -129,7 +129,10 @@ export function termsCard(
         ...ownTop.mentions.slice(0, LIST_SIZE),
         ...sharedTop.mentions.slice(0, LIST_SIZE),
       ].map((m) => m.term);
-      const handles = await fetchHandles([...new Set(dids)]);
+      // Handles only make mentions readable; without them, show DIDs.
+      const handles = await fetchHandles([...new Set(dids)]).catch(
+        () => new Map<string, string>(),
+      );
 
       const missing = requested - posts.size;
       body.className = "terms-columns";

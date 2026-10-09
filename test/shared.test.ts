@@ -147,4 +147,20 @@ describe("fetchHandles", () => {
     expect(handles.get("did:plc:3")).toBe("3.example.com");
     expect(handles.size).toBe(26);
   });
+
+  test("leaves out DIDs in a batch the AppView fails on", async () => {
+    const dids = Array.from({ length: 26 }, (_, i) => `did:plc:${i}`);
+    const fetchFn: typeof fetch = async (input) => {
+      const actors = new URL(String(input)).searchParams.getAll("actors");
+      return actors.length === 25
+        ? Response.json({ error: "InvalidRequest" }, { status: 400 })
+        : Response.json({
+            profiles: actors.map((did) => ({ did, handle: "last.example" })),
+          });
+    };
+
+    const handles = await fetchHandles(dids, fetchFn);
+
+    expect([...handles]).toEqual([["did:plc:25", "last.example"]]);
+  });
 });

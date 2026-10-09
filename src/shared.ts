@@ -130,11 +130,20 @@ export async function fetchProfiles(
   return new Map(profiles.map((p) => [p.did, p]));
 }
 
-/** Looks up the current handle of each DID. */
+/**
+ * Looks up the current handle of each DID. DIDs of unavailable accounts,
+ * and DIDs in a batch the AppView fails on, are absent from the result.
+ */
 export async function fetchHandles(
   dids: string[],
   fetchFn: typeof fetch = fetch,
 ): Promise<Map<string, string>> {
-  const profiles = await fetchProfiles(dids, fetchFn);
-  return new Map([...profiles].map(([did, p]) => [did, p.handle]));
+  const profiles = await batchedQuery<Profile>(
+    "app.bsky.actor.getProfiles",
+    "actors",
+    dids,
+    fetchFn,
+    true,
+  );
+  return new Map(profiles.map((p) => [p.did, p.handle]));
 }
