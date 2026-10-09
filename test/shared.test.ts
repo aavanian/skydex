@@ -58,6 +58,21 @@ describe("sharedUris", () => {
       [ref("q2").uri, ref("q1").uri],
     );
   });
+
+  test("lists a post shared more than once a single time", () => {
+    const twice = [
+      activity("repost", "2025-05-01T00:00:00Z", { subject: ref("p") }),
+      activity("quote", "2025-06-01T00:00:00Z", {
+        embed: { $type: "app.bsky.embed.record", record: ref("p") },
+      }),
+      activity("repost", "2025-07-01T00:00:00Z", { subject: ref("r") }),
+    ];
+
+    expect(sharedUris(twice, new Date("2025-01-01T00:00:00Z"), 3)).toEqual([
+      ref("r").uri,
+      ref("p").uri,
+    ]);
+  });
 });
 
 function recordingFetch(respond: (url: URL) => unknown) {

@@ -37,21 +37,21 @@ export function sharedUri(activity: Activity): string | undefined {
 
 /**
  * URIs of posts the account reposted or quoted since `since`, newest
- * first, at most `max`.
+ * first, each once, at most `max`.
  */
 export function sharedUris(
   activities: Activity[],
   since: Date,
   max: number,
 ): string[] {
-  const uris: string[] = [];
-  for (let i = activities.length - 1; i >= 0 && uris.length < max; i--) {
+  const uris = new Set<string>();
+  for (let i = activities.length - 1; i >= 0 && uris.size < max; i--) {
     const activity = activities[i];
     if (!activity || activity.createdAt < since) break;
     const uri = sharedUri(activity);
-    if (uri) uris.push(uri);
+    if (uri) uris.add(uri);
   }
-  return uris;
+  return [...uris];
 }
 
 function chunks<T>(items: T[]): T[][] {
