@@ -3,6 +3,12 @@
 {
   "name": "skydex",
   "compatibility_date": "2026-10-01",
+  // Served only on its own domain: no *.workers.dev address and no
+  // per-version preview URLs. Without these settings, every deploy
+  // turns both back on.
+  "routes": [{ "pattern": "skydex.avanian.net", "custom_domain": true }],
+  "workers_dev": false,
+  "preview_urls": false,
   "assets": {
     "directory": "./dist",
   },
