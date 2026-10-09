@@ -97,25 +97,41 @@ function hostingFiles(): Plugin {
 /** Where the build lists the licences of the code it bundles. */
 const LICENSES_FILE = "third-party-licenses.txt";
 
+/** The licence of each package copied into `src/vendor`, as text sections. */
+function vendoredLicenseSections(): string {
+  const vendor = new URL("src/vendor/", import.meta.url);
+  return readdirSync(vendor)
+    .map((name) => {
+      const source = new URL(`${name}/`, vendor);
+      const title = readFileSync(new URL("README.md", source), "utf8")
+        .split("\n")[0]
+        ?.replace(/^# /, "");
+      const licence = readFileSync(new URL("LICENSE", source), "utf8");
+      return `\n## ${title}\n\n${licence.trim()}\n`;
+    })
+    .join("");
+}
+
 /**
  * Adds the licences of code copied into `src/vendor` to the file Vite
- * writes for bundled npm packages, which cannot see them.
+ * writes for bundled npm packages, which cannot see them. The dev
+ * server, which bundles nothing, serves the vendored licences alone, so
+ * the footer link works there too.
  */
 function vendoredLicenses(): Plugin {
   return {
     name: "vendored-licenses",
-    apply: "build",
-    writeBundle({ dir = "dist" }) {
-      const vendor = new URL("src/vendor/", import.meta.url);
-      const sections = readdirSync(vendor).map((name) => {
-        const source = new URL(`${name}/`, vendor);
-        const title = readFileSync(new URL("README.md", source), "utf8")
-          .split("\n")[0]
-          ?.replace(/^# /, "");
-        const licence = readFileSync(new URL("LICENSE", source), "utf8");
-        return `\n## ${title}\n\n${licence.trim()}\n`;
+    configureServer(server) {
+      server.middlewares.use(`/${LICENSES_FILE}`, (_request, response) => {
+        response.setHeader("Content-Type", "text/plain; charset=utf-8");
+        response.end(
+          "# Licenses\n\nDevelopment server: bundled packages are listed only in builds.\n" +
+            vendoredLicenseSections(),
+        );
       });
-      appendFileSync(join(dir, LICENSES_FILE), sections.join(""));
+    },
+    writeBundle({ dir = "dist" }) {
+      appendFileSync(join(dir, LICENSES_FILE), vendoredLicenseSections());
     },
   };
 }
