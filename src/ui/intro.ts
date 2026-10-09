@@ -1,4 +1,4 @@
-import { bookmarkletHref } from "../bookmarklet";
+import { BOOKMARKLET_HINT, bookmarkletHref } from "../bookmarklet";
 import { h } from "./dom";
 
 /** Shown before any account is chosen: what Skydex does, and the bookmarklet. */
@@ -17,8 +17,7 @@ export function introCard(): HTMLElement {
   link.addEventListener("click", (event) => {
     event.preventDefault();
     hint.hidden = false;
-    hint.textContent =
-      "Drag this link to your bookmarks bar rather than clicking it here. Then click the bookmark while viewing a Bluesky profile.";
+    hint.textContent = BOOKMARKLET_HINT;
   });
 
   return h(

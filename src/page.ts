@@ -1,5 +1,5 @@
 import "./style.css";
-import { bookmarkletHref } from "./bookmarklet";
+import { BOOKMARKLET_HINT, bookmarkletHref } from "./bookmarklet";
 import { siteFooter } from "./ui/footer";
 
 // Static pages (privacy, guide) live one folder below the app.
@@ -13,8 +13,6 @@ for (const link of document.querySelectorAll<HTMLAnchorElement>(
   link.href = bookmarkletHref(appUrl);
   link.addEventListener("click", (event) => {
     event.preventDefault();
-    alert(
-      "Drag this link to your bookmarks bar rather than clicking it here, then click the bookmark while viewing a Bluesky profile.",
-    );
+    alert(BOOKMARKLET_HINT);
   });
 }

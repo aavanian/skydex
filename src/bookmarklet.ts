@@ -9,3 +9,7 @@ export function bookmarkletHref(appUrl: string): string {
     `void open(${target}+encodeURIComponent(location.href))`,
   )}`;
 }
+
+/** What to do instead of clicking the bookmarklet on Skydex's own pages. */
+export const BOOKMARKLET_HINT =
+  "Drag this link to your bookmarks bar rather than clicking it here. Then click the bookmark while viewing a Bluesky profile.";
