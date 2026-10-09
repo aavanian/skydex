@@ -1,6 +1,11 @@
 import { describe, expect, test } from "vitest";
 import type { Activity } from "../../src/activities";
-import { datasetLines, parseDataset } from "../../src/classify/dataset";
+import {
+  datasetLine,
+  datasetLines,
+  parseDataset,
+  toJsonl,
+} from "../../src/classify/dataset";
 
 const uri = "at://did:plc:me/app.bsky.feed.post/3abc";
 const activity: Activity = {
@@ -41,6 +46,35 @@ describe("datasetLines", () => {
     );
 
     expect(JSON.parse(text)).not.toHaveProperty("answers");
+  });
+});
+
+describe("datasetLine", () => {
+  test("adds the post's link and the run's model and questions version", () => {
+    expect(
+      datasetLine(
+        { uri, state: { post: "lol" }, labels: { snark: true } },
+        { model: "m", questionsVersion: "v" },
+      ),
+    ).toEqual({
+      uri,
+      url: "https://bsky.app/profile/did:plc:me/post/3abc",
+      state: { post: "lol" },
+      model: "m",
+      questions_version: "v",
+      labels: { snark: true },
+    });
+  });
+});
+
+describe("toJsonl", () => {
+  test("writes one line per entry, each ending in a newline, read back as given", () => {
+    const lines = [{ uri }, { uri: `${uri}2`, labels: { snark: false } }];
+
+    const text = toJsonl(lines);
+
+    expect(text.split("\n")).toHaveLength(3);
+    expect(parseDataset(text)).toEqual(lines);
   });
 });
 

@@ -22,29 +22,57 @@ export interface DatasetLine {
   labels?: Record<string, boolean>;
 }
 
+/** Which model and questions produced a run's answers. */
+export interface RunMeta {
+  model: string;
+  questionsVersion: string;
+}
+
+/** A dataset line for one post, with its link and the run that answered it. */
+export function datasetLine(
+  post: Omit<DatasetLine, "url" | "model" | "questions_version">,
+  meta: RunMeta,
+): DatasetLine {
+  return {
+    uri: post.uri,
+    url: postUrl(post.uri),
+    created_at: post.created_at,
+    type: post.type,
+    state: post.state,
+    model: meta.model,
+    questions_version: meta.questionsVersion,
+    answers: post.answers,
+    labels: post.labels,
+  };
+}
+
+/** Serialises dataset lines as JSONL. */
+export function toJsonl(lines: DatasetLine[]): string {
+  return lines.map((line) => JSON.stringify(line) + "\n").join("");
+}
+
 /** Serialises classified posts as JSONL. */
 export function datasetLines(
   items: DecisionItem[],
   activities: Map<string, Activity>,
   answers: Map<string, Record<string, number>>,
-  meta: { model: string; questionsVersion: string },
+  meta: RunMeta,
 ): string {
-  return items
-    .map((item) => {
+  return toJsonl(
+    items.map((item) => {
       const activity = activities.get(item.id);
-      const line: DatasetLine = {
-        uri: item.id,
-        url: postUrl(item.id),
-        created_at: activity?.createdAt.toISOString(),
-        type: activity?.type,
-        state: item.state as DatasetLine["state"],
-        model: meta.model,
-        questions_version: meta.questionsVersion,
-        answers: answers.get(item.id),
-      };
-      return JSON.stringify(line) + "\n";
-    })
-    .join("");
+      return datasetLine(
+        {
+          uri: item.id,
+          created_at: activity?.createdAt.toISOString(),
+          type: activity?.type,
+          state: item.state as DatasetLine["state"],
+          answers: answers.get(item.id),
+        },
+        meta,
+      );
+    }),
+  );
 }
 
 /** Reads JSONL dataset lines; `url` may stand in for `uri`. */

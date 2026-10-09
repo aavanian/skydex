@@ -19,7 +19,12 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { basename } from "node:path";
 import { parseArgs } from "node:util";
 import { scoreTags } from "../src/classify/benchmark";
-import { parseDataset, type DatasetLine } from "../src/classify/dataset";
+import {
+  datasetLine,
+  parseDataset,
+  toJsonl,
+  type DatasetLine,
+} from "../src/classify/dataset";
 import {
   decide,
   DEFAULT_DECISION_MODEL,
@@ -138,17 +143,19 @@ runs: for (const model of models) {
     );
 
     for (const p of judged) {
-      results.push({
-        uri: p.uri,
-        url: postUrl(p.uri),
-        created_at: p.created_at,
-        type: p.type,
-        state: p.state,
-        model,
-        questions_version: questionsVersion(questions, model),
-        answers: p.answers,
-        labels: p.labels,
-      });
+      results.push(
+        datasetLine(
+          {
+            uri: p.uri,
+            created_at: p.created_at,
+            type: p.type,
+            state: p.state,
+            answers: p.answers,
+            labels: p.labels,
+          },
+          { model, questionsVersion: questionsVersion(questions, model) },
+        ),
+      );
     }
     if (run.stoppedBy) {
       stoppedBy = run.stoppedBy;
@@ -158,10 +165,7 @@ runs: for (const model of models) {
 }
 
 if (values.out) {
-  writeFileSync(
-    values.out,
-    results.map((r) => JSON.stringify(r)).join("\n") + "\n",
-  );
+  writeFileSync(values.out, toJsonl(results));
   console.log(`Wrote ${results.length} answers to ${values.out}`);
 }
 
