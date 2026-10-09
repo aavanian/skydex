@@ -47,10 +47,16 @@
             To analyse an account, your browser asks Bluesky's public API
             (<code>public.api.bsky.app</code>), the identity directory
             (<code>plc.directory</code>) and the account's data server (for
-            accounts hosted by Bluesky, a <code>*.host.bsky.network</code>
-            server) for public data: profile, posts, reposts, follows and block
-            records. These services see your IP address and which accounts you
-            look up, as they would with any Bluesky app. No login is involved.
+            accounts hosted by Bluesky, a
+            <code>*.host.bsky.network</code> server) for public data: profile,
+            posts, reposts, follows and block records. Accounts using a
+            <code>did:web</code> identity are looked up on their own domain
+            instead of <code>plc.directory</code>. The follows scan also reads
+            the identity records, and for follows hidden by a block the block
+            records on their own data servers, of the accounts followed: those
+            servers, which may be run by anyone, see your IP address too. These
+            services see your IP address and which accounts you look up, as they
+            would with any Bluesky app. No login is involved.
           </dd>
 
           <dt>OpenRouter, only for content tags</dt>
