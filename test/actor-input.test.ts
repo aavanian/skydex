@@ -17,10 +17,12 @@ describe("actorFromInput", () => {
     expect(actorFromInput(input)).toBe(actor);
   });
 
-  test.each([[""], ["https://bsky.app/notifications"], ["not a handle"]])(
-    "%j is not an actor",
-    (input) => {
-      expect(actorFromInput(input)).toBeUndefined();
-    },
-  );
+  test.each([
+    [""],
+    ["https://bsky.app/notifications"],
+    ["not a handle"],
+    ["https://bsky.app/profile/%E0%A4%A"],
+  ])("%j is not an actor", (input) => {
+    expect(actorFromInput(input)).toBeUndefined();
+  });
 });
