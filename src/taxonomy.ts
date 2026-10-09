@@ -2,6 +2,11 @@ export const ACTIVITY_TYPES = ["organic", "quote", "reply", "repost"] as const;
 
 export type ActivityType = (typeof ACTIVITY_TYPES)[number];
 
+/** Whether the account wrote it itself: an organic post or a quote. */
+export function isOwnPost(type: ActivityType): boolean {
+  return type === "organic" || type === "quote";
+}
+
 const QUOTE_EMBEDS = new Set([
   "app.bsky.embed.record",
   "app.bsky.embed.recordWithMedia",

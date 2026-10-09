@@ -1,6 +1,7 @@
 import type { Activity } from "../activities";
 import { sharedUri } from "../shared-posts";
 import type { DecisionItem } from "./decisions";
+import { isOwnPost } from "../taxonomy";
 
 export interface PostState {
   post: string;
@@ -30,7 +31,7 @@ export function contentItems(
   for (let i = activities.length - 1; i >= 0 && items.length < max; i--) {
     const activity = activities[i];
     if (!activity || activity.createdAt < since) break;
-    if (activity.type !== "organic" && activity.type !== "quote") continue;
+    if (!isOwnPost(activity.type)) continue;
     const text = (activity.record as { text?: string }).text?.trim();
     if (!text) continue;
 

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { activityType } from "../src/taxonomy";
+import { ACTIVITY_TYPES, activityType, isOwnPost } from "../src/taxonomy";
 
 const me = "did:plc:me";
 const createdAt = "2025-01-01T00:00:00.000Z";
@@ -109,5 +109,11 @@ describe("activityType", () => {
         reply: { root: strongRef, parent: own("2") },
       }),
     ).toBe("reply");
+  });
+});
+
+describe("isOwnPost", () => {
+  test("own writing is organic posts and quote commentary", () => {
+    expect(ACTIVITY_TYPES.filter(isOwnPost)).toEqual(["organic", "quote"]);
   });
 });

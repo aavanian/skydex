@@ -4,6 +4,7 @@ import { fetchHandles } from "../appview";
 import { termsOf, topTerms, type TermCount, type TopTerms } from "../terms";
 import { h } from "./dom";
 import { errorMessage } from "../errors";
+import { isOwnPost } from "../taxonomy";
 
 const CLOUD_SIZE = 40;
 const LIST_SIZE = 10;
@@ -119,7 +120,7 @@ export function termsCard(
     try {
       const recent = activities.filter((a) => a.createdAt >= since);
       const own = recent
-        .filter((a) => a.type === "organic" || a.type === "quote")
+        .filter((a) => isOwnPost(a.type))
         .map((a) => termsOf(a.record));
       const { requested, posts } = await sharedPosts;
       const shared = [...posts.values()].map(termsOf);

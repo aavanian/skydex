@@ -6,6 +6,7 @@ import {
   summarize,
   type Summary,
 } from "./stats";
+import { isOwnPost } from "./taxonomy";
 
 export interface FollowSummary extends Summary {
   /** Latest organic or quote post: something the account wrote itself. */
@@ -26,7 +27,7 @@ export function followSummary(
   const oldest = recent.activities[0]?.createdAt;
   const recentSince = now.getTime() - RECENT_DAYS * DAY_MS;
   const lastOwnPost = recent.activities
-    .filter((a) => a.type === "organic" || a.type === "quote")
+    .filter((a) => isOwnPost(a.type))
     .at(-1)?.createdAt;
   return {
     ...summarize(recent.activities, now),
