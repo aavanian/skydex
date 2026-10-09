@@ -1,5 +1,10 @@
 import { describe, expect, test } from "vitest";
-import { activitiesFrom, activitiesFromFeed } from "../src/activities";
+import {
+  activitiesFrom,
+  activitiesFromCar,
+  activitiesFromFeed,
+} from "../src/activities";
+import { FIXTURE_CAR } from "./support/fixtures";
 
 const did = "did:plc:me";
 const subject = {
@@ -157,5 +162,27 @@ describe("activitiesFromFeed", () => {
     ]);
 
     expect(activities).toEqual([]);
+  });
+});
+
+describe("activitiesFromCar", () => {
+  test("reads posts and reposts from a repository export, oldest first", () => {
+    const activities = activitiesFromCar("did:plc:fixture", FIXTURE_CAR);
+
+    expect(activities.map((a) => [a.type, a.uri])).toEqual([
+      ["organic", "at://did:plc:fixture/app.bsky.feed.post/3aaa"],
+      ["reply", "at://did:plc:fixture/app.bsky.feed.post/3aab"],
+      ["quote", "at://did:plc:fixture/app.bsky.feed.post/3aac"],
+      ["repost", "at://did:plc:fixture/app.bsky.feed.repost/3aad"],
+    ]);
+    expect(activities[0]?.createdAt).toEqual(
+      new Date("2025-01-01T00:00:00.000Z"),
+    );
+  });
+
+  test("rejects bytes that are not a repository export", () => {
+    expect(() =>
+      activitiesFromCar("did:plc:fixture", new Uint8Array([1, 2, 3])),
+    ).toThrow();
   });
 });

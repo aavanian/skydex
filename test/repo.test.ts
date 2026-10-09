@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
-import { resolveAccount } from "../src/repo";
+import { downloadRepo, resolveAccount } from "../src/repo";
+import { FIXTURE_CAR } from "./support/fixtures";
 
 const PLC_DOC = {
   id: "did:plc:abc",
@@ -106,5 +107,35 @@ describe("resolveAccount", () => {
     await expect(
       resolveAccount("nobody.invalid", fakeFetch({})),
     ).rejects.toThrow("Could not resolve handle nobody.invalid");
+  });
+});
+
+describe("downloadRepo", () => {
+  const account = {
+    did: "did:plc:fixture",
+    handle: "fixture.test",
+    pds: "https://pds.example.net",
+  };
+
+  test("fetches the account's repository export from its data server", async () => {
+    const urls: string[] = [];
+    const fetchFn: typeof fetch = async (input) => {
+      urls.push(String(input));
+      return new Response(FIXTURE_CAR);
+    };
+
+    expect(await downloadRepo(account, fetchFn)).toEqual(FIXTURE_CAR);
+    expect(urls).toEqual([
+      "https://pds.example.net/xrpc/com.atproto.sync.getRepo?did=did%3Aplc%3Afixture",
+    ]);
+  });
+
+  test("fails with the status when the data server refuses", async () => {
+    const fetchFn: typeof fetch = async () =>
+      new Response("gone", { status: 410 });
+
+    await expect(downloadRepo(account, fetchFn)).rejects.toThrow(
+      "410 downloading repo",
+    );
   });
 });
