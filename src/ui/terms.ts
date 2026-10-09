@@ -3,6 +3,7 @@ import { windowStart, type Settings } from "../settings";
 import { fetchHandles } from "../appview";
 import { termsOf, topTerms, type TermCount, type TopTerms } from "../terms";
 import { h } from "./dom";
+import { errorMessage } from "../errors";
 
 const CLOUD_SIZE = 40;
 const LIST_SIZE = 10;
@@ -153,7 +154,7 @@ export function termsCard(
       );
     } catch (error) {
       body.className = "status error";
-      body.textContent = `Could not load shared posts: ${error instanceof Error ? error.message : String(error)}`;
+      body.textContent = `Could not load shared posts: ${errorMessage(error)}`;
     }
   })();
 

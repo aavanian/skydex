@@ -5,6 +5,7 @@
  */
 
 import { runPool } from "../pool";
+import { errorMessage } from "../errors";
 
 const ENDPOINT = "https://openrouter.ai/api/alpha/decisions";
 export const DEFAULT_DECISION_MODEL = "cloudflare/clef-flash";
@@ -150,7 +151,7 @@ export async function decide(
         return;
       }
       result.failed++;
-      result.lastError = error instanceof Error ? error.message : String(error);
+      result.lastError = errorMessage(error);
     }
     options.onProgress?.(++done, items.length);
   });

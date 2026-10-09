@@ -12,6 +12,7 @@ import { runPool } from "../pool";
 import { RECENT_DAYS } from "../stats";
 import { h } from "./dom";
 import { pageStore } from "./store";
+import { errorMessage } from "../errors";
 
 const CONCURRENCY = 6;
 
@@ -284,10 +285,7 @@ export async function renderFollows(
           updateCounts();
         } catch (error) {
           renderAction(row);
-          setStatus(
-            error instanceof Error ? error.message : String(error),
-            true,
-          );
+          setStatus(errorMessage(error), true);
         }
       });
       cell.replaceChildren(confirmButton, " ", cancel);
@@ -457,10 +455,7 @@ export async function renderFollows(
       } catch (error) {
         popup.close();
         if (!signal.aborted) {
-          setStatus(
-            error instanceof Error ? error.message : String(error),
-            true,
-          );
+          setStatus(errorMessage(error), true);
         }
       } finally {
         pending = undefined;
@@ -536,7 +531,7 @@ export async function renderFollows(
     "Fetch every account's latest activity again, ignoring this browser's cache";
   rescan.addEventListener("click", () => {
     renderFollows(root, actor, setStatus, 0).catch((error: unknown) =>
-      setStatus(error instanceof Error ? error.message : String(error), true),
+      setStatus(errorMessage(error), true),
     );
   });
   freshness.replaceChildren(

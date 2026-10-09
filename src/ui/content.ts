@@ -15,6 +15,7 @@ import { windowStart, type Settings } from "../settings";
 import { postUrl } from "../links";
 import { h } from "./dom";
 import { keyStore, startLogin } from "./key";
+import { errorMessage } from "../errors";
 
 const THRESHOLD = 0.5;
 
@@ -280,8 +281,7 @@ export function contentCard(
         run.remove();
       } catch (error) {
         status.className = "status error";
-        status.textContent =
-          error instanceof Error ? error.message : String(error);
+        status.textContent = errorMessage(error);
         run.disabled = false;
       }
     });

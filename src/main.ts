@@ -14,6 +14,7 @@ import { introCard } from "./ui/intro";
 import { renderProfile } from "./ui/profile";
 import { settingsPage } from "./ui/settings";
 import { pageStore } from "./ui/store";
+import { errorMessage } from "./errors";
 
 const app = document.querySelector<HTMLElement>("#app");
 if (!app) throw new Error("Missing #app element");
@@ -31,10 +32,6 @@ function remember(actor: string): void {
   } catch {
     // Not remembered: the field simply starts empty next time.
   }
-}
-
-function message(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }
 
 type SetStatus = (text: string, isError?: boolean) => void;
@@ -89,7 +86,7 @@ async function analyze(
     );
     renderProfile(results, account, activities, loadSettings(browserStorage()));
   } catch (error) {
-    setStatus(message(error), true);
+    setStatus(errorMessage(error), true);
   }
 }
 
@@ -154,7 +151,7 @@ function lookupView(mode: "actor" | "follows"): View {
           actor,
           setStatus,
           scanCacheHours * 60 * 60 * 1000,
-        ).catch((error: unknown) => setStatus(message(error), true));
+        ).catch((error: unknown) => setStatus(errorMessage(error), true));
       } else {
         void analyze(actor, results, setStatus);
       }
@@ -269,6 +266,6 @@ finishLogin().then(
   (error: unknown) => {
     const { mode } = routeFrom(location.search);
     show({ mode });
-    views[mode].setStatus(message(error), true);
+    views[mode].setStatus(errorMessage(error), true);
   },
 );
