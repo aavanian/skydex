@@ -19,6 +19,11 @@ export interface Summary {
 export const DAY_MS = 24 * 60 * 60 * 1000;
 export const RECENT_DAYS = 90;
 
+/** Whole days from `date` to `now`; 0 for a date after `now`. */
+export function daysSince(date: Date, now: Date): number {
+  return Math.max(0, Math.floor((now.getTime() - date.getTime()) / DAY_MS));
+}
+
 function zeroCounts(): CountsByType {
   return { organic: 0, quote: 0, reply: 0, repost: 0 };
 }
@@ -52,9 +57,7 @@ export function summarize(activities: Activity[], now: Date): Summary {
     first,
     last,
     lastOrganic,
-    daysSinceLast: last
-      ? Math.floor((now.getTime() - last.getTime()) / DAY_MS)
-      : undefined,
+    daysSinceLast: last ? daysSince(last, now) : undefined,
     perWeek: weeks > 0 ? total / weeks : 0,
     recentPerWeek: recent / (RECENT_DAYS / 7),
   };
@@ -71,12 +74,14 @@ function monthKey(year: number, month: number): string {
 
 /**
  * Activity counts per type for every month from the first activity to
- * `until` (default: the last activity), including months without any.
+ * `until` or the last activity, whichever is later, including months
+ * without any.
  */
 export function monthlyMix(activities: Activity[], until?: Date): MonthMix[] {
   const first = activities[0]?.createdAt;
-  const last = until ?? activities.at(-1)?.createdAt;
-  if (!first || !last) return [];
+  const lastActivity = activities.at(-1)?.createdAt;
+  if (!first || !lastActivity) return [];
+  const last = until && until > lastActivity ? until : lastActivity;
 
   const byMonth = new Map<string, MonthMix>();
   let year = first.getUTCFullYear();

@@ -2,7 +2,7 @@ import * as Plot from "@observablehq/plot";
 import type { Activity } from "../activities";
 import type { Account } from "../repo";
 import {
-  DAY_MS,
+  daysSince,
   monthlyMix,
   RECENT_DAYS,
   summarize,
@@ -81,7 +81,7 @@ function summaryCard(
   now: Date,
 ): HTMLElement {
   const daysSinceOrganic = summary.lastOrganic
-    ? Math.floor((now.getTime() - summary.lastOrganic.getTime()) / DAY_MS)
+    ? daysSince(summary.lastOrganic, now)
     : undefined;
   return h(
     "section",

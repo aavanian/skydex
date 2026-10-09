@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import type { Activity } from "../src/activities";
 import type { ActivityType } from "../src/taxonomy";
-import { monthlyMix, summarize } from "../src/stats";
+import { daysSince, monthlyMix, summarize } from "../src/stats";
 
 function activity(type: ActivityType, iso: string): Activity {
   return {
@@ -137,5 +137,47 @@ describe("monthlyMix", () => {
     );
 
     expect(mix.map((m) => m.month)).toEqual(["2024-11", "2024-12", "2025-01"]);
+  });
+
+  test("covers activities dated after the given month", () => {
+    const mix = monthlyMix(
+      [
+        activity("organic", "2026-09-05T00:00:00.000Z"),
+        activity("reply", "2026-11-02T00:00:00.000Z"),
+      ],
+      new Date("2026-10-08T00:00:00.000Z"),
+    );
+
+    expect(mix.map((m) => m.month)).toEqual(["2026-09", "2026-10", "2026-11"]);
+    expect(mix.at(-1)?.reply).toBe(1);
+  });
+
+  test("ends when every activity is after the given month", () => {
+    const mix = monthlyMix(
+      [activity("organic", "2026-11-02T00:00:00.000Z")],
+      new Date("2026-10-08T00:00:00.000Z"),
+    );
+
+    expect(mix.map((m) => m.month)).toEqual(["2026-11"]);
+  });
+});
+
+describe("daysSince", () => {
+  test("counts whole days up to now", () => {
+    expect(
+      daysSince(
+        new Date("2026-10-01T12:00:00.000Z"),
+        new Date("2026-10-08T00:00:00.000Z"),
+      ),
+    ).toBe(6);
+  });
+
+  test("is 0 for a date after now", () => {
+    expect(
+      daysSince(
+        new Date("2026-11-02T00:00:00.000Z"),
+        new Date("2026-10-08T00:00:00.000Z"),
+      ),
+    ).toBe(0);
   });
 });

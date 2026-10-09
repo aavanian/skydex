@@ -2,7 +2,13 @@ import type { Activity } from "./activities";
 import { runPool } from "./pool";
 import { APPVIEW, lastHandle, resolveAccount } from "./repo";
 import { fetchProfiles } from "./shared";
-import { DAY_MS, RECENT_DAYS, summarize, type Summary } from "./stats";
+import {
+  DAY_MS,
+  daysSince,
+  RECENT_DAYS,
+  summarize,
+  type Summary,
+} from "./stats";
 import { activityType } from "./taxonomy";
 
 export interface Follow {
@@ -160,9 +166,7 @@ export function followSummary(
   return {
     ...summarize(recent.activities, now),
     lastOwnPost,
-    daysSinceOwnPost: lastOwnPost
-      ? Math.floor((now.getTime() - lastOwnPost.getTime()) / DAY_MS)
-      : undefined,
+    daysSinceOwnPost: lastOwnPost ? daysSince(lastOwnPost, now) : undefined,
     recentRateIsMinimum:
       !recent.complete &&
       oldest !== undefined &&
