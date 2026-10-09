@@ -1,3 +1,5 @@
+import { getJson, xrpcUrl } from "./xrpc";
+
 export const APPVIEW = "https://public.api.bsky.app";
 const PLC_DIRECTORY = "https://plc.directory";
 
@@ -11,12 +13,6 @@ export interface Account {
 interface DidDocument {
   alsoKnownAs?: string[];
   service?: { id: string; serviceEndpoint: string }[];
-}
-
-async function getJson<T>(fetchFn: typeof fetch, url: string): Promise<T> {
-  const response = await fetchFn(url);
-  if (!response.ok) throw new Error(`${response.status} fetching ${url}`);
-  return (await response.json()) as T;
 }
 
 function didDocumentUrl(did: string): string {
@@ -37,7 +33,7 @@ export async function resolveDid(
   try {
     const { did } = await getJson<{ did: string }>(
       fetchFn,
-      `${APPVIEW}/xrpc/com.atproto.identity.resolveHandle?handle=${encodeURIComponent(id)}`,
+      xrpcUrl(APPVIEW, "com.atproto.identity.resolveHandle", { handle: id }),
     );
     return did;
   } catch {
@@ -89,8 +85,9 @@ export async function downloadRepo(
   account: Account,
   fetchFn: typeof fetch = fetch,
 ): Promise<Uint8Array> {
-  const url = `${account.pds}/xrpc/com.atproto.sync.getRepo?did=${encodeURIComponent(account.did)}`;
-  const response = await fetchFn(url);
+  const response = await fetchFn(
+    xrpcUrl(account.pds, "com.atproto.sync.getRepo", { did: account.did }),
+  );
   if (!response.ok) throw new Error(`${response.status} downloading repo`);
   return new Uint8Array(await response.arrayBuffer());
 }

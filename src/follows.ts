@@ -10,6 +10,7 @@ import {
   type Summary,
 } from "./stats";
 import { activityType } from "./taxonomy";
+import { getJson, xrpcUrl } from "./xrpc";
 
 export interface Follow {
   did: string;
@@ -35,20 +36,6 @@ interface FeedItem {
 }
 
 const PAGE_SIZE = 100;
-
-async function getJson<T>(fetchFn: typeof fetch, url: URL): Promise<T> {
-  const response = await fetchFn(url.toString());
-  if (!response.ok) throw new Error(`${response.status} from ${url.pathname}`);
-  return (await response.json()) as T;
-}
-
-function xrpc(method: string, params: Record<string, string>): URL {
-  const url = new URL(`${APPVIEW}/xrpc/${method}`);
-  for (const [name, value] of Object.entries(params)) {
-    url.searchParams.set(name, value);
-  }
-  return url;
-}
 
 /**
  * Turns author feed items into activities, oldest first. Reposts are
@@ -105,10 +92,10 @@ export async function fetchFollows(
       cursor?: string;
     }>(
       fetchFn,
-      xrpc("app.bsky.graph.getFollows", {
+      xrpcUrl(APPVIEW, "app.bsky.graph.getFollows", {
         actor,
         limit: String(PAGE_SIZE),
-        ...(cursor ? { cursor } : {}),
+        cursor,
       }),
     );
     subject ??= toFollow(page.subject);
@@ -131,7 +118,7 @@ export async function fetchRecentActivity(
 ): Promise<RecentActivity> {
   const page = await getJson<{ feed: FeedItem[]; cursor?: string }>(
     fetchFn,
-    xrpc("app.bsky.feed.getAuthorFeed", {
+    xrpcUrl(APPVIEW, "app.bsky.feed.getAuthorFeed", {
       actor: did,
       limit: String(PAGE_SIZE),
       filter: "posts_with_replies",
@@ -217,11 +204,12 @@ async function listSubjects(
   let cursor: string | undefined;
   let pages = 0;
   do {
-    const url = new URL(`${pds}/xrpc/com.atproto.repo.listRecords`);
-    url.searchParams.set("repo", repo);
-    url.searchParams.set("collection", collection);
-    url.searchParams.set("limit", String(PAGE_SIZE));
-    if (cursor) url.searchParams.set("cursor", cursor);
+    const url = xrpcUrl(pds, "com.atproto.repo.listRecords", {
+      repo,
+      collection,
+      limit: String(PAGE_SIZE),
+      cursor,
+    });
     const page = await getJson<{
       records: {
         uri: string;
@@ -259,7 +247,7 @@ async function unavailableReason(
 ): Promise<Follow["unavailable"]> {
   try {
     const response = await fetchFn(
-      xrpc("app.bsky.actor.getProfile", { actor: did }).toString(),
+      xrpcUrl(APPVIEW, "app.bsky.actor.getProfile", { actor: did }),
     );
     if (response.status !== 400) return undefined;
     const { error } = (await response.json()) as { error?: string };

@@ -1,6 +1,7 @@
 import type { Activity } from "./activities";
 import { runPool } from "./pool";
 import { APPVIEW } from "./repo";
+import { xrpcUrl } from "./xrpc";
 
 const BATCH_SIZE = 25;
 /** Batches in flight at once, to stay clear of AppView rate limits. */
@@ -80,9 +81,9 @@ async function batchedQuery<T>(
   const pages: Record<string, T[]>[] = [];
   const batches = chunks(values).map((chunk, index) => ({ chunk, index }));
   await runPool(batches, BATCH_CONCURRENCY, async ({ chunk, index }) => {
-    const url = new URL(`${APPVIEW}/xrpc/${method}`);
-    for (const value of chunk) url.searchParams.append(param, value);
-    const response = await fetchFn(url.toString());
+    const response = await fetchFn(
+      xrpcUrl(APPVIEW, method, { [param]: chunk }),
+    );
     if (!response.ok) {
       if (skipFailedBatches) return;
       throw new Error(`${response.status} from ${method}`);

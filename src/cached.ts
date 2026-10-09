@@ -2,6 +2,7 @@ import type { Activity } from "./activities";
 import { fetchRecentActivity, type RecentActivity } from "./follows";
 import { downloadRepo, type Account } from "./repo";
 import type { Store } from "./store";
+import { xrpcUrl } from "./xrpc";
 
 /** Store operations never break an analysis: on failure, nothing is cached. */
 async function quietly<T>(op: () => Promise<T>): Promise<T | undefined> {
@@ -18,7 +19,9 @@ async function latestRev(
 ): Promise<string | undefined> {
   try {
     const response = await fetchFn(
-      `${account.pds}/xrpc/com.atproto.sync.getLatestCommit?did=${encodeURIComponent(account.did)}`,
+      xrpcUrl(account.pds, "com.atproto.sync.getLatestCommit", {
+        did: account.did,
+      }),
     );
     if (!response.ok) return undefined;
     return ((await response.json()) as { rev?: string }).rev;
