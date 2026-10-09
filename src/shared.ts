@@ -115,7 +115,8 @@ export interface Profile {
 
 /**
  * Profiles of the given DIDs. Deactivated, suspended and deleted
- * accounts are absent from the result.
+ * accounts, and accounts in a batch the AppView fails on, are absent
+ * from the result.
  */
 export async function fetchProfiles(
   dids: string[],
@@ -126,6 +127,7 @@ export async function fetchProfiles(
     "actors",
     dids,
     fetchFn,
+    true,
   );
   return new Map(profiles.map((p) => [p.did, p]));
 }
@@ -138,12 +140,6 @@ export async function fetchHandles(
   dids: string[],
   fetchFn: typeof fetch = fetch,
 ): Promise<Map<string, string>> {
-  const profiles = await batchedQuery<Profile>(
-    "app.bsky.actor.getProfiles",
-    "actors",
-    dids,
-    fetchFn,
-    true,
-  );
-  return new Map(profiles.map((p) => [p.did, p.handle]));
+  const profiles = await fetchProfiles(dids, fetchFn);
+  return new Map([...profiles].map(([did, p]) => [did, p.handle]));
 }

@@ -23,7 +23,8 @@ export interface Follow {
   unavailable?: "deactivated" | "suspended" | "deleted";
   /**
    * A block hides this follow: the account blocks you, you block it,
-   * or a block list does (or a block too deep in their records to find).
+   * or a block list does (or a block too deep in their records to find,
+   * or in records that could not be read).
    */
   block?: "blocks-you" | "you-block" | "hidden";
 }
@@ -247,32 +248,50 @@ const UNAVAILABLE: Record<string, Follow["unavailable"]> = {
   AccountTakedown: "suspended",
 };
 
+/**
+ * Why an account missing from profile lists can no longer be seen, or
+ * undefined if it can be, or if the AppView could not tell (rate limit,
+ * server error, no connection).
+ */
 async function unavailableReason(
   did: string,
   fetchFn: typeof fetch,
 ): Promise<Follow["unavailable"]> {
-  const response = await fetchFn(
-    xrpc("app.bsky.actor.getProfile", { actor: did }).toString(),
-  );
-  if (response.ok) return undefined;
-  const { error } = (await response.json()) as { error?: string };
-  return UNAVAILABLE[error ?? ""] ?? "deleted";
+  try {
+    const response = await fetchFn(
+      xrpc("app.bsky.actor.getProfile", { actor: did }).toString(),
+    );
+    if (response.status !== 400) return undefined;
+    const { error } = (await response.json()) as { error?: string };
+    if (error === "InvalidRequest") return "deleted";
+    return UNAVAILABLE[error ?? ""];
+  } catch {
+    return undefined;
+  }
 }
 
+/**
+ * Whether `did` blocks `you`, read from its own records. False when its
+ * identity or data server cannot be reached.
+ */
 async function blocksYou(
   did: string,
   you: string,
   fetchFn: typeof fetch,
 ): Promise<boolean> {
-  const { pds } = await resolveAccount(did, fetchFn);
-  const blocked = await listSubjects(
-    pds,
-    did,
-    "app.bsky.graph.block",
-    fetchFn,
-    MAX_BLOCK_PAGES,
-  );
-  return blocked.some((b) => b.subject === you);
+  try {
+    const { pds } = await resolveAccount(did, fetchFn);
+    const blocked = await listSubjects(
+      pds,
+      did,
+      "app.bsky.graph.block",
+      fetchFn,
+      MAX_BLOCK_PAGES,
+    );
+    return blocked.some((b) => b.subject === you);
+  } catch {
+    return false;
+  }
 }
 
 /**

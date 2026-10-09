@@ -139,3 +139,76 @@ test("a follow made minutes ago is not taken for one hidden by a block", async (
   });
   expect(result.find((f) => f.did === blocksMe.did)?.block).toBe("blocks-you");
 });
+
+/** `fetchFn`, except that requests matching `fails` get `response`. */
+function failing(
+  fails: (url: URL) => boolean,
+  response: () => Response,
+): typeof fetch {
+  return async (input, init) =>
+    fails(new URL(String(input))) ? response() : fetchFn(input, init);
+}
+
+const unavailableOf = (result: { did: string; unavailable?: string }[]) =>
+  Object.fromEntries(result.map((f) => [f.did, f.unavailable]));
+
+test("a rate limit or server error from getProfile is not taken for a deleted account", async () => {
+  const rateLimited = failing(
+    (url) => url.searchParams.get("actor") === deleted,
+    () => Response.json({ error: "RateLimitExceeded" }, { status: 429 }),
+  );
+  const serverError = failing(
+    (url) => url.searchParams.get("actor") === suspended,
+    () => new Response("<html>Bad gateway</html>", { status: 502 }),
+  );
+
+  const limited = await fetchFollowing(me, rateLimited);
+  const broken = await fetchFollowing(me, serverError);
+
+  expect(unavailableOf(limited.follows)[deleted]).toBeUndefined();
+  expect(unavailableOf(limited.follows)[suspended]).toBe("suspended");
+  expect(unavailableOf(broken.follows)[suspended]).toBeUndefined();
+  expect(unavailableOf(broken.follows)[deleted]).toBe("deleted");
+});
+
+test("one followed account's unreachable data server does not stop the scan", async () => {
+  const unreachable = failing(
+    (url) =>
+      url.searchParams.get("repo") === blocksMe.did ||
+      url.pathname === `/${blocksMe.did}`,
+    () => new Response("down", { status: 500 }),
+  );
+
+  const { follows: result } = await fetchFollowing(me, unreachable);
+
+  expect(result.find((f) => f.did === blocksMe.did)?.block).toBe("hidden");
+  expect(result.find((f) => f.did === iBlock.did)?.block).toBe("you-block");
+  expect(unavailableOf(result)[deactivated]).toBe("deactivated");
+});
+
+test("a network error looking up an unavailable account does not stop the scan", async () => {
+  const offline: typeof fetch = async (input, init) => {
+    if (new URL(String(input)).searchParams.get("actor") === deleted) {
+      throw new TypeError("Failed to fetch");
+    }
+    return fetchFn(input, init);
+  };
+
+  const { follows: result } = await fetchFollowing(me, offline);
+
+  expect(unavailableOf(result)[deleted]).toBeUndefined();
+  expect(unavailableOf(result)[suspended]).toBe("suspended");
+});
+
+test("a batch of profiles the AppView fails on does not stop the scan", async () => {
+  const noProfiles = failing(
+    (url) => url.pathname === "/xrpc/app.bsky.actor.getProfiles",
+    () => Response.json({ error: "InternalServerError" }, { status: 500 }),
+  );
+
+  const { subject, follows: result } = await fetchFollowing(me, noProfiles);
+
+  expect(subject).toEqual({ did: me, handle: me });
+  expect(result.map((f) => f.did)).toEqual(follows);
+  expect(unavailableOf(result)[deleted]).toBe("deleted");
+});
