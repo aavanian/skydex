@@ -34,8 +34,8 @@ built alongside the app; keep them in step with what the code does.
 Releases are git tags (`v0.1.0`); the footer shows `git describe` of
 the build. `package.json`'s version is not used and stays `0.0.0`.
 
-See `docs/DESIGN.md` for how it works and `docs/DISCOVERIES.md` for
-API quirks.
+See `docs/DESIGN.md` for how it works, `docs/ROADMAP.md` for ideas
+not built yet, and `docs/DISCOVERIES.md` for API quirks.
 
 ## Benchmark the classifier
 
@@ -46,11 +46,9 @@ question wordings against posts you have labelled:
 1. Build a dataset: one JSON object per line, with a post reference
    and the labels you expect, for example:
 
-   ```json
-   {
-     "url": "https://bsky.app/profile/<did>/post/<rkey>",
-     "labels": { "politics": true, "political_snark": false }
-   }
+   <!-- prettier-ignore -->
+   ```jsonl
+   {"url": "https://bsky.app/profile/<did>/post/<rkey>", "labels": {"politics": true, "political_snark": false}}
    ```
 
    Or start from **Download dataset** on an account's page, which
@@ -67,7 +65,8 @@ question wordings against posts you have labelled:
    ```
 
    `--questions` takes JSON files shaped like `CONTENT_QUESTIONS`.
-   The report shows precision, recall and accuracy per tag, the cost,
+   `--threshold` (default 0.5) is the probability at which a tag
+   counts. The report shows precision, recall and accuracy per tag, the cost,
    and every post where the model disagrees with your label. `--out`
    writes every answer as a dataset again, text included.
 
