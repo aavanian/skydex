@@ -21,10 +21,11 @@ demain hier`;
 const SHORTHAND = `imo imho tbh fwiw btw idk iirc ngl`;
 
 /**
- * Dates and counting, in English and French. Month and day names that
- * also name a topic (March, Mars, Sun) are kept.
+ * Month and weekday names, in English and French. Those that also name
+ * a topic (March, Mars, Sun) are kept. Number words come from
+ * stopwords-iso.
  */
-const CALENDAR_AND_NUMBERS = `january february april june july august september october november
+const CALENDAR = `january february april june july august september october november
 december jan feb mar apr jun jul aug sep oct nov dec monday tuesday
 wednesday thursday friday saturday sunday tue thu fri sat janvier
 février avril mai juin juillet août septembre octobre novembre décembre
@@ -50,6 +51,6 @@ export const STOPWORDS: ReadonlySet<string> = new Set(
   [
     ...isoEnglish,
     ...isoFrench,
-    ...`${ENGLISH} ${FRENCH} ${SHORTHAND} ${CALENDAR_AND_NUMBERS}`.split(/\s+/),
+    ...`${ENGLISH} ${FRENCH} ${SHORTHAND} ${CALENDAR}`.split(/\s+/),
   ].filter((word) => word && !TOPICS.has(word)),
 );
