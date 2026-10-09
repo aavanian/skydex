@@ -34,6 +34,7 @@ const STATUS_LABELS: Record<DisplayStatus, string> = {
   "blocks-you": "Blocks you",
   "you-block": "You block them",
   hidden: "Hidden by a block",
+  unchecked: "Could not check",
   never: "Never posted",
   dormant: "Dormant",
   "no-own-posts": "No own posts lately",
@@ -485,7 +486,7 @@ export async function renderFollows(
       h(
         "p",
         { className: "footnote" },
-        `Based on each account's latest 100 posts, replies and reposts. Dormant: nothing in ${RECENT_DAYS} days. No own posts lately: only reposts or replies in ${RECENT_DAYS} days. Gone: deactivated, suspended or deleted. Hidden by a block: no direct block found, so likely a block list.`,
+        `Based on each account's latest 100 posts, replies and reposts. Dormant: nothing in ${RECENT_DAYS} days. No own posts lately: only reposts or replies in ${RECENT_DAYS} days. Gone: deactivated, suspended or deleted. Hidden by a block: no direct block found, so likely a block list. Could not check: hidden, but their records could not be read to look for a block; scan again later.`,
       ),
       h("div", { className: "table-scroll follows" }, table),
     ),

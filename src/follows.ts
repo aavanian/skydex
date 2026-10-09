@@ -20,10 +20,11 @@ export interface Follow {
   unavailable?: "deactivated" | "suspended" | "deleted";
   /**
    * A block hides this follow: the account blocks you, you block it,
-   * or a block list does (or a block too deep in their records to find,
-   * or in records that could not be read).
+   * or a block list does (or a block too deep in their records to find).
+   * Unchecked: something hides it, but their records could not be read
+   * to look for a block.
    */
-  block?: "blocks-you" | "you-block" | "hidden";
+  block?: "blocks-you" | "you-block" | "hidden" | "unchecked";
 }
 
 const PAGE_SIZE = 100;
@@ -161,14 +162,14 @@ async function unavailableReason(
 }
 
 /**
- * Whether `did` blocks `you`, read from its own records. False when its
- * identity or data server cannot be reached.
+ * Whether `did` blocks `you`, read from its own records. Undefined when
+ * its identity or data server cannot be reached.
  */
 async function blocksYou(
   did: string,
   you: string,
   fetchFn: typeof fetch,
-): Promise<boolean> {
+): Promise<boolean | undefined> {
   try {
     const { pds } = await resolveAccount(did, fetchFn);
     const blocked = await listSubjects(
@@ -180,7 +181,7 @@ async function blocksYou(
     );
     return blocked.some((b) => b.subject === you);
   } catch {
-    return false;
+    return undefined;
   }
 }
 
@@ -230,10 +231,14 @@ export async function fetchFollowing(
     } else if (!listed.has(follow.did)) {
       const isNew =
         now - (followRecords.get(follow.did)?.createdAt ?? 0) < NEW_FOLLOW_MS;
-      if (blocked.has(follow.did)) follow.block = "you-block";
-      else if (await blocksYou(follow.did, account.did, fetchFn)) {
-        follow.block = "blocks-you";
-      } else if (!isNew) follow.block = "hidden";
+      if (blocked.has(follow.did)) {
+        follow.block = "you-block";
+        return;
+      }
+      const theyBlock = await blocksYou(follow.did, account.did, fetchFn);
+      if (theyBlock) follow.block = "blocks-you";
+      else if (!isNew)
+        follow.block = theyBlock === false ? "hidden" : "unchecked";
     }
   });
 

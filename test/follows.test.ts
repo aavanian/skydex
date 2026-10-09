@@ -259,7 +259,7 @@ describe("fetchFollowing", () => {
 
     const { follows: result } = await fetchFollowing(me, unreachable);
 
-    expect(result.find((f) => f.did === blocksMe.did)?.block).toBe("hidden");
+    expect(result.find((f) => f.did === blocksMe.did)?.block).toBe("unchecked");
     expect(result.find((f) => f.did === iBlock.did)?.block).toBe("you-block");
     expect(unavailableOf(result)[deactivated]).toBe("deactivated");
   });
