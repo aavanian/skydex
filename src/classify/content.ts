@@ -1,5 +1,5 @@
 import type { Activity } from "../activities";
-import { sharedUri } from "../shared";
+import { sharedUri } from "../shared-posts";
 import type { DecisionItem } from "./decisions";
 
 export interface PostState {

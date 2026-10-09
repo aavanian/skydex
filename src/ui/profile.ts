@@ -1,5 +1,6 @@
 import * as Plot from "@observablehq/plot";
 import type { Activity } from "../activities";
+import { fetchPosts } from "../appview";
 import type { Account } from "../repo";
 import {
   daysSince,
@@ -13,7 +14,7 @@ import { cssVar, h } from "./dom";
 import { termsCard } from "./terms";
 import { onThemeChange } from "./theme";
 import { contentCard } from "./content";
-import { fetchPosts, sharedUris } from "../shared";
+import { sharedUris } from "../shared-posts";
 import { windowStart, type Settings } from "../settings";
 
 const TYPE_LABELS: Record<ActivityType, string> = {

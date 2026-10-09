@@ -1,6 +1,6 @@
+import { APPVIEW } from "./appview";
 import { getJson, xrpcUrl } from "./xrpc";
 
-export const APPVIEW = "https://public.api.bsky.app";
 const PLC_DIRECTORY = "https://plc.directory";
 
 export interface Account {

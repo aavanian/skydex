@@ -1,5 +1,6 @@
+import { fetchPosts } from "../appview";
 import { resolveDid } from "../repo";
-import { fetchPosts, quotedUri } from "../shared";
+import { quotedUri } from "../shared-posts";
 import { postState, type PostState } from "./content";
 
 /**

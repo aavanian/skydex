@@ -4,7 +4,7 @@ import {
   type OAuthSession,
   type RuntimeImplementation,
 } from "@atproto/oauth-client";
-import { APPVIEW } from "../repo";
+import { APPVIEW } from "../appview";
 import { waitForCallback } from "./callback-wait";
 import { clientMetadataFor } from "./client-metadata";
 import { MemoryStore } from "./memory-store";

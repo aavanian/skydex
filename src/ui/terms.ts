@@ -1,6 +1,6 @@
 import type { Activity } from "../activities";
 import { windowStart, type Settings } from "../settings";
-import { fetchHandles } from "../shared";
+import { fetchHandles } from "../appview";
 import { termsOf, topTerms, type TermCount, type TopTerms } from "../terms";
 import { h } from "./dom";
 

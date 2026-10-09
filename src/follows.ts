@@ -1,7 +1,7 @@
 import type { Activity } from "./activities";
 import { runPool } from "./pool";
-import { APPVIEW, lastHandle, resolveAccount } from "./repo";
-import { fetchProfiles } from "./shared";
+import { APPVIEW, fetchProfiles } from "./appview";
+import { lastHandle, resolveAccount } from "./repo";
 import {
   DAY_MS,
   daysSince,
