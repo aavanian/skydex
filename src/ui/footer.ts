@@ -52,6 +52,8 @@ export function siteFooter(root = "./", newTab = false): HTMLElement {
       pageLink("privacy/", "Privacy"),
       " · ",
       pageLink("guide/", "Guide"),
+      " · ",
+      pageLink("third-party-licenses.txt", "Third-party licenses"),
     ),
     h(
       "span",
