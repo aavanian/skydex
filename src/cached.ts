@@ -1,5 +1,5 @@
-import type { Activity } from "./activities";
-import { fetchRecentActivity, type RecentActivity } from "./follows";
+import type { Activity, RecentActivity } from "./activities";
+import { fetchRecentActivity } from "./follows";
 import { downloadRepo, type Account } from "./repo";
 import type { Store } from "./store";
 import { xrpcUrl } from "./xrpc";

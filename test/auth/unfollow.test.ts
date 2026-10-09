@@ -1,6 +1,5 @@
 import { describe, expect, test } from "vitest";
 import { deleteFollow } from "../../src/auth/unfollow";
-import { MemoryStore } from "../../src/auth/memory-store";
 
 describe("deleteFollow", () => {
   test("deletes the follow record through the session", async () => {
@@ -42,16 +41,5 @@ describe("deleteFollow", () => {
     await expect(
       deleteFollow(fetchHandler, "at://did:plc:me/app.bsky.graph.follow/3abc"),
     ).rejects.toThrow("Unfollow failed (401: Token expired)");
-  });
-});
-
-describe("MemoryStore", () => {
-  test("keeps values until deleted", async () => {
-    const store = new MemoryStore<string, { a: number }>();
-    await store.set("k", { a: 1 });
-
-    expect(await store.get("k")).toEqual({ a: 1 });
-    await store.del("k");
-    expect(await store.get("k")).toBeUndefined();
   });
 });

@@ -1,12 +1,11 @@
 import { cachedRecentActivity } from "../cached";
 import {
-  fetchFollowing,
   followStatus,
   followSummary,
-  type Follow,
   type FollowStatus,
   type FollowSummary,
-} from "../follows";
+} from "../follow-status";
+import { fetchFollowing, type Follow } from "../follows";
 import type { OAuthSession } from "@atproto/oauth-client";
 import { deleteFollow } from "../auth/unfollow";
 import { runPool } from "../pool";
