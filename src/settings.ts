@@ -27,18 +27,32 @@ const KEY = "skydex-settings";
  */
 export const MODEL_PATTERN = String.raw`[\w.\-]+/[\w.:\-]+`;
 
-const isIntegerIn = (min: number, max: number) => (value: unknown) =>
-  Number.isInteger(value) &&
-  (value as number) >= min &&
-  (value as number) <= max;
+export interface IntegerRange {
+  min: number;
+  max: number;
+}
+
+/** Accepted range of each numeric setting. */
+export const SETTING_LIMITS = {
+  windowMonths: { min: 1, max: 120 },
+  maxPosts: { min: 1, max: 5000 },
+  scanCacheHours: { min: 0, max: 24 * 30 },
+} satisfies Record<string, IntegerRange>;
+
+const isIntegerIn =
+  ({ min, max }: IntegerRange) =>
+  (value: unknown) =>
+    Number.isInteger(value) &&
+    (value as number) >= min &&
+    (value as number) <= max;
 
 const VALID: { [K in keyof Settings]: (value: unknown) => boolean } = {
-  windowMonths: isIntegerIn(1, 120),
-  maxPosts: isIntegerIn(1, 5000),
+  windowMonths: isIntegerIn(SETTING_LIMITS.windowMonths),
+  maxPosts: isIntegerIn(SETTING_LIMITS.maxPosts),
   model: (value) =>
     typeof value === "string" &&
     new RegExp(`^(?:${MODEL_PATTERN})$`).test(value),
-  scanCacheHours: isIntegerIn(0, 24 * 30),
+  scanCacheHours: isIntegerIn(SETTING_LIMITS.scanCacheHours),
 };
 
 /** Keeps each valid value and falls back to the default for the rest. */

@@ -3,7 +3,9 @@ import {
   DEFAULT_SETTINGS,
   MODEL_PATTERN,
   saveSettings,
+  SETTING_LIMITS,
   validSettings,
+  type IntegerRange,
   type Settings,
 } from "../settings";
 import { h } from "./dom";
@@ -21,8 +23,7 @@ function numberField(
   label: string,
   note: string,
   value: number,
-  min: number,
-  max: number,
+  { min, max }: IntegerRange,
 ): [HTMLElement, HTMLInputElement] {
   const input = h("input", {
     type: "number",
@@ -50,22 +51,19 @@ export function settingsPage(current: Settings): HTMLElement {
     "Analysis window, months",
     "How far back topics and content tags look.",
     current.windowMonths,
-    1,
-    120,
+    SETTING_LIMITS.windowMonths,
   );
   const [postsField, postsInput] = numberField(
     "Posts per analysis",
     "Most reposted or quoted posts fetched for topics, and most posts classified.",
     current.maxPosts,
-    1,
-    5000,
+    SETTING_LIMITS.maxPosts,
   );
   const [cacheField, cacheInput] = numberField(
     "Follows scan cache, hours",
     "How long the scan reuses an account's recent activity. 0 always refetches.",
     current.scanCacheHours,
-    0,
-    24 * 30,
+    SETTING_LIMITS.scanCacheHours,
   );
   const modelInput = h("input", {
     type: "text",
