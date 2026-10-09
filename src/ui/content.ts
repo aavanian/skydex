@@ -16,14 +16,10 @@ import { postUrl } from "../links";
 import { h } from "./dom";
 import { keyStore, startLogin } from "./key";
 import { errorMessage } from "../errors";
+import { integer, percent } from "./format";
 
 const THRESHOLD = 0.5;
 
-const percent = new Intl.NumberFormat(undefined, {
-  style: "percent",
-  maximumFractionDigits: 0,
-});
-const integer = new Intl.NumberFormat();
 const usd = new Intl.NumberFormat(undefined, {
   style: "currency",
   currency: "USD",

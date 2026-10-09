@@ -20,6 +20,21 @@ export function h<K extends keyof HTMLElementTagNameMap>(
   return el;
 }
 
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+/** A decorative 16×16 icon drawn from SVG path data, hidden from screen readers. */
+export function icon(paths: string[]): SVGSVGElement {
+  const svg = document.createElementNS(SVG_NS, "svg");
+  svg.setAttribute("viewBox", "0 0 16 16");
+  svg.setAttribute("aria-hidden", "true");
+  for (const d of paths) {
+    const path = document.createElementNS(SVG_NS, "path");
+    path.setAttribute("d", d);
+    svg.append(path);
+  }
+  return svg;
+}
+
 /** Reads a CSS custom property from the document root. */
 export function cssVar(name: string): string {
   return getComputedStyle(document.documentElement)

@@ -10,9 +10,10 @@ import type { OAuthSession } from "@atproto/oauth-client";
 import { deleteFollow } from "../auth/unfollow";
 import { runPool } from "../pool";
 import { RECENT_DAYS } from "../stats";
-import { h } from "./dom";
+import { h, icon } from "./dom";
 import { pageStore } from "./store";
 import { errorMessage } from "../errors";
+import { dateFormat, decimal, integer, percent } from "./format";
 
 const CONCURRENCY = 6;
 
@@ -44,14 +45,6 @@ const STATUS_LABELS: Record<DisplayStatus, string> = {
 
 /** Sort order: gone first, then blocks, then from quietest to active. */
 const STATUS_ORDER = Object.keys(STATUS_LABELS) as DisplayStatus[];
-
-const decimal = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
-const percent = new Intl.NumberFormat(undefined, {
-  style: "percent",
-  maximumFractionDigits: 0,
-});
-const integer = new Intl.NumberFormat();
-const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: "medium" });
 
 interface Row {
   follow: Follow;
@@ -105,23 +98,13 @@ function dateCell(date: Date | undefined): string {
   return date ? dateFormat.format(date) : "—";
 }
 
-const SVG_NS = "http://www.w3.org/2000/svg";
-
 /** "Opens elsewhere" icon: a box with an arrow leaving its corner. */
 function externalIcon(): SVGSVGElement {
-  const svg = document.createElementNS(SVG_NS, "svg");
-  svg.setAttribute("viewBox", "0 0 16 16");
-  svg.setAttribute("aria-hidden", "true");
-  for (const d of [
+  return icon([
     "M9 2h5v5",
     "M14 2 7 9",
     "M12 9v4a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h4",
-  ]) {
-    const path = document.createElementNS(SVG_NS, "path");
-    path.setAttribute("d", d);
-    svg.append(path);
-  }
-  return svg;
+  ]);
 }
 
 function displayName(follow: Follow): string {

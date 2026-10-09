@@ -16,6 +16,7 @@ import { onThemeChange } from "./theme";
 import { contentCard } from "./content";
 import { sharedUris } from "../shared-posts";
 import { windowStart, type Settings } from "../settings";
+import { dateFormat, decimal, integer, percent } from "./format";
 
 const TYPE_LABELS: Record<ActivityType, string> = {
   organic: "Organic",
@@ -23,14 +24,6 @@ const TYPE_LABELS: Record<ActivityType, string> = {
   reply: "Reply",
   repost: "Repost",
 };
-
-const percent = new Intl.NumberFormat(undefined, {
-  style: "percent",
-  maximumFractionDigits: 0,
-});
-const decimal = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
-const integer = new Intl.NumberFormat();
-const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: "medium" });
 
 function typeColors(): string[] {
   return ACTIVITY_TYPES.map((t) => cssVar(`--${t}`));

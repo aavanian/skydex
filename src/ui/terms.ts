@@ -5,11 +5,10 @@ import { termsOf, topTerms, type TermCount, type TopTerms } from "../terms";
 import { h } from "./dom";
 import { errorMessage } from "../errors";
 import { isOwnPost } from "../taxonomy";
+import { integer } from "./format";
 
 const CLOUD_SIZE = 40;
 const LIST_SIZE = 10;
-
-const integer = new Intl.NumberFormat();
 
 function cloud(words: TermCount[]): HTMLElement {
   if (!words.length) return h("p", { className: "footnote" }, "No words.");
