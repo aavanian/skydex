@@ -9,12 +9,12 @@ import { routeFrom, searchFor, type Route } from "./route";
 import { loadSettings } from "./settings";
 import { h } from "./ui/dom";
 import { siteFooter } from "./ui/footer";
-import { finishLogin } from "./ui/key";
+import { finishLogin } from "./classify/openrouter-login";
 import { renderFollows } from "./ui/follows";
 import { introCard } from "./ui/intro";
 import { renderProfile } from "./ui/profile";
 import { settingsPage } from "./ui/settings";
-import { pageStore } from "./ui/store";
+import { pageStore } from "./store";
 import { errorMessage } from "./errors";
 
 const app = document.querySelector<HTMLElement>("#app");

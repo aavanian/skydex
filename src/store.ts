@@ -83,3 +83,11 @@ export class Store {
     await Promise.all([this.db.clear("repos"), this.db.clear("recent")]);
   }
 }
+
+let opened: Promise<Store | undefined> | undefined;
+
+/** The page's cache, or undefined when the browser blocks IndexedDB. */
+export function pageStore(): Promise<Store | undefined> {
+  opened ??= Store.open().catch(() => undefined);
+  return opened;
+}

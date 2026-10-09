@@ -1,19 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { KeyStore } from "../../src/classify/key-store";
-
-function memoryStorage(): Storage {
-  const data = new Map<string, string>();
-  return {
-    get length() {
-      return data.size;
-    },
-    clear: () => data.clear(),
-    getItem: (k) => data.get(k) ?? null,
-    key: (i) => [...data.keys()][i] ?? null,
-    removeItem: (k) => void data.delete(k),
-    setItem: (k, v) => void data.set(k, v),
-  };
-}
+import { memoryStorage } from "../support/memory-storage";
 
 describe("KeyStore", () => {
   test("keeps the key for the session only unless asked to remember it", () => {

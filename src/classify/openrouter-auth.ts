@@ -62,5 +62,54 @@ export async function exchangeCode(
   if (!response.ok) {
     throw new Error(`OpenRouter login failed (${response.status})`);
   }
-  return ((await response.json()) as { key: string }).key;
+  const { key } = (await response.json()) as { key?: unknown };
+  if (typeof key !== "string" || !key) {
+    throw new Error("OpenRouter login returned no key");
+  }
+  return key;
+}
+
+const PENDING_LOGIN = "openrouter-login";
+
+/** A login sent to OpenRouter, to be checked when it redirects back. */
+export interface PendingLogin {
+  state: string;
+  verifier: string;
+  remember: boolean;
+}
+
+export function savePendingLogin(
+  storage: Storage | undefined,
+  pending: PendingLogin,
+): void {
+  storage?.setItem(PENDING_LOGIN, JSON.stringify(pending));
+}
+
+/**
+ * The login to complete when `url` is OpenRouter's redirect back, or
+ * undefined when it is not. The pending login saved in `storage` is
+ * used up either way, and a returned state that does not match it is
+ * refused: otherwise a crafted link could plant someone else's key.
+ */
+export function returnedLogin(
+  url: URL,
+  storage: Storage | undefined,
+): { code: string; verifier: string; remember: boolean } | undefined {
+  const code = url.searchParams.get("code");
+  if (!code) return undefined;
+  const raw = storage?.getItem(PENDING_LOGIN);
+  storage?.removeItem(PENDING_LOGIN);
+  const pending = raw ? (JSON.parse(raw) as PendingLogin) : undefined;
+  if (!pending || pending.state !== url.searchParams.get("state")) {
+    throw new Error("OpenRouter login could not be verified; try again.");
+  }
+  return { code, verifier: pending.verifier, remember: pending.remember };
+}
+
+/** `url` without the code and state OpenRouter added to it. */
+export function withoutLoginParams(url: URL): URL {
+  const clean = new URL(url);
+  clean.searchParams.delete("code");
+  clean.searchParams.delete("state");
+  return clean;
 }

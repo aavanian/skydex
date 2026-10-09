@@ -10,7 +10,7 @@ import {
   type Settings,
 } from "../settings";
 import { h } from "./dom";
-import { pageStore } from "./store";
+import { pageStore } from "../store";
 
 function numberField(
   label: string,

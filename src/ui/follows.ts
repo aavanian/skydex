@@ -11,7 +11,7 @@ import { runPool } from "../pool";
 import { RECENT_DAYS } from "../stats";
 import { blueskyLogin, loginControl } from "./bluesky-login";
 import { h, icon } from "./dom";
-import { pageStore } from "./store";
+import { pageStore } from "../store";
 import { errorMessage } from "../errors";
 import { dateFormat, decimal, integer, percent } from "./format";
 

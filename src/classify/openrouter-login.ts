@@ -1,24 +1,20 @@
 import { browserStorage } from "../browser-storage";
-import { KeyStore } from "../classify/key-store";
+import { KeyStore } from "./key-store";
 import {
   codeChallenge,
   exchangeCode,
   loginUrl,
   randomToken,
-} from "../classify/openrouter-auth";
+  returnedLogin,
+  savePendingLogin,
+  withoutLoginParams,
+  type PendingLogin,
+} from "./openrouter-auth";
 
 export const keyStore = new KeyStore(
   browserStorage("sessionStorage"),
   browserStorage("localStorage"),
 );
-
-const LOGIN = "openrouter-login";
-
-interface PendingLogin {
-  state: string;
-  verifier: string;
-  remember: boolean;
-}
 
 /** Sends the viewer to OpenRouter to approve a key for this page. */
 export async function startLogin(remember: boolean): Promise<void> {
@@ -27,7 +23,7 @@ export async function startLogin(remember: boolean): Promise<void> {
     verifier: randomToken(),
     remember,
   };
-  browserStorage("sessionStorage")?.setItem(LOGIN, JSON.stringify(pending));
+  savePendingLogin(browserStorage("sessionStorage"), pending);
   const callback = new URL(location.href);
   callback.search = "";
   const actor = new URLSearchParams(location.search).get("actor");
@@ -47,18 +43,9 @@ export async function startLogin(remember: boolean): Promise<void> {
  */
 export async function finishLogin(): Promise<void> {
   const url = new URL(location.href);
-  const code = url.searchParams.get("code");
-  if (!code) return;
-  url.searchParams.delete("code");
-  const returnedState = url.searchParams.get("state");
-  url.searchParams.delete("state");
-  history.replaceState(null, "", url);
-
-  const raw = browserStorage("sessionStorage")?.getItem(LOGIN);
-  browserStorage("sessionStorage")?.removeItem(LOGIN);
-  const pending = raw ? (JSON.parse(raw) as PendingLogin) : undefined;
-  if (!pending || pending.state !== returnedState) {
-    throw new Error("OpenRouter login could not be verified; try again.");
-  }
-  keyStore.set(await exchangeCode(code, pending.verifier), pending.remember);
+  if (!url.searchParams.has("code")) return;
+  history.replaceState(null, "", withoutLoginParams(url));
+  const login = returnedLogin(url, browserStorage("sessionStorage"));
+  if (!login) return;
+  keyStore.set(await exchangeCode(login.code, login.verifier), login.remember);
 }

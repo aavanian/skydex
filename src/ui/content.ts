@@ -14,7 +14,7 @@ import type { Account } from "../repo";
 import { windowStart, type Settings } from "../settings";
 import { postUrl } from "../links";
 import { h } from "./dom";
-import { keyStore, startLogin } from "./key";
+import { keyStore, startLogin } from "../classify/openrouter-login";
 import { errorMessage } from "../errors";
 import { integer, percent } from "./format";
 
