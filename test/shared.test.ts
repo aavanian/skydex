@@ -122,6 +122,26 @@ describe("fetchPosts", () => {
     expect(posts.size).toBe(5);
   });
 
+  test("has at most 6 batches in flight at once", async () => {
+    const uris = Array.from({ length: 300 }, (_, i) => ref(`p${i}`).uri);
+    let inFlight = 0;
+    let most = 0;
+    const fetchFn: typeof fetch = async (input) => {
+      most = Math.max(most, ++inFlight);
+      await new Promise((resolve) => setTimeout(resolve, 1));
+      inFlight--;
+      const batch = new URL(String(input)).searchParams.getAll("uris");
+      return Response.json({
+        posts: batch.map((uri) => ({ uri, record: {} })),
+      });
+    };
+
+    const posts = await fetchPosts(uris, fetchFn);
+
+    expect(posts.size).toBe(300);
+    expect(most).toBe(6);
+  });
+
   test("returns nothing for deleted posts the AppView omits", async () => {
     const { fetchFn } = recordingFetch(() => ({ posts: [] }));
 

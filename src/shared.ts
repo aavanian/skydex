@@ -1,7 +1,10 @@
 import type { Activity } from "./activities";
+import { runPool } from "./pool";
 import { APPVIEW } from "./repo";
 
 const BATCH_SIZE = 25;
+/** Batches in flight at once, to stay clear of AppView rate limits. */
+const BATCH_CONCURRENCY = 6;
 
 interface QuoteEmbed {
   $type?: string;
@@ -63,9 +66,9 @@ function chunks<T>(items: T[]): T[][] {
 }
 
 /**
- * Runs an XRPC query on values 25 at a time. With `skipFailedBatches`,
- * a batch the server fails on contributes nothing instead of failing
- * the whole query.
+ * Runs an XRPC query on values 25 at a time, a few batches at once. With
+ * `skipFailedBatches`, a batch the server fails on contributes nothing
+ * instead of failing the whole query.
  */
 async function batchedQuery<T>(
   method: string,
@@ -74,19 +77,19 @@ async function batchedQuery<T>(
   fetchFn: typeof fetch,
   skipFailedBatches = false,
 ): Promise<T[]> {
-  const pages = await Promise.all(
-    chunks(values).map(async (chunk) => {
-      const url = new URL(`${APPVIEW}/xrpc/${method}`);
-      for (const value of chunk) url.searchParams.append(param, value);
-      const response = await fetchFn(url.toString());
-      if (!response.ok) {
-        if (skipFailedBatches) return {};
-        throw new Error(`${response.status} from ${method}`);
-      }
-      return (await response.json()) as Record<string, T[]>;
-    }),
-  );
-  return pages.flatMap((page) => Object.values(page).flat());
+  const pages: Record<string, T[]>[] = [];
+  const batches = chunks(values).map((chunk, index) => ({ chunk, index }));
+  await runPool(batches, BATCH_CONCURRENCY, async ({ chunk, index }) => {
+    const url = new URL(`${APPVIEW}/xrpc/${method}`);
+    for (const value of chunk) url.searchParams.append(param, value);
+    const response = await fetchFn(url.toString());
+    if (!response.ok) {
+      if (skipFailedBatches) return;
+      throw new Error(`${response.status} from ${method}`);
+    }
+    pages[index] = (await response.json()) as Record<string, T[]>;
+  });
+  return pages.flatMap((page) => Object.values(page ?? {}).flat());
 }
 
 /**
